@@ -1,15 +1,6 @@
 # HUD Aggregated USPS Administrative Data on Vacancies
 # Ben Glasner 12/09/2024
 
-    # NOTE FOR USERS: the USPS data was shared generously by Alexander Din at the
-    # US Department of Housing and Urban Development, and is not authorized for 
-    # public release.
-    # you may access a public facing version of this data by signing up for
-    # an account through HUD here: 
-    # https://www.huduser.gov/portal/home.html
-    # keep in mind that the use of this public facing data will impact the generated
-    # results.
-
 rm(list = ls())
 options(scipen = 999)
 set.seed(42)
