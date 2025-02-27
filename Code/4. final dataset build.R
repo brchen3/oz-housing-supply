@@ -113,7 +113,8 @@ tract_designation <- read.csv("2020_tracts_with_2010_qualifications.csv") %>%
   
 tract_designation_geoid <- sort(unique(tract_designation$geoid))
 
-# National Center for Education Statistics
+# read National Center for Education Statistics 2021 classifications,
+# for urban-rural tract classification schema
 NCES_Locales_Tract_2020 <- readr::read_csv("NCES Locales Tract CSV.csv") %>%
   rename(geoid = FIPS) %>%
   select(geoid, `Type tract`) 
