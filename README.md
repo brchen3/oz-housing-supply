@@ -22,25 +22,44 @@ From the 5-year American Community Survey samples from 2012-2023, we extract tra
 
 <h3>NCES locale classifications</h3>
 
-Block group population data from the 2017-2021 American Community Survey is paired with the 2021 locale classifications from the National Center for Education Statistics (NCES)  to calculate the locale where most people in a tract live. We then determine where a tract sits on the urban-rural spectrum according to the community characteristics where residents tend to live.
+Block group population data from the 2017-2021 American Community Survey is paired with the 2021 locale classifications from the National Center for Education Statistics (NCES)  to calculate the locale where most people in a tract live. We then determine where a tract sits on the urban-rural spectrum according to the community characteristics where residents tend to live. The definitions are as follows:
 
+<b>Large urban </b>
 
-Mid-sized urban
+At least 50 percent of the tract population is in a large urban area, and the tract is in a large urban county. Classified as suburban if at least 50 percent of the tract population is in a large urban area but the tract is not in a large urban county.
+
+<b>Mid-sized urban </b>
+
 At least 50 percent of the tract population is in a mid-sized urban area, and the tract is in a mid-sized urban county.
 
-Small urban
+<b>Small urban </b>
+
 At least 50 percent of the tract population is in a small urban area, and the tract is not classified as large or mid-sized urban.
 
-Suburban
-If at least 50 percent of the tract population is in an urban suburban area of any size the tract is classified as suburban (excluding those already classified as urban) regardless of county type. If at least 50 percent of the tract population is in a small town area the tract is classified as suburban if in an urban or suburban county, otherwise classified as small town. The tract definitions are as follows:
+<b>Suburban </b>
 
-<b>Large urban</b>
+If at least 50 percent of the tract population is in an urban suburban area of any size the tract is classified as suburban (excluding those already classified as urban) regardless of county type. If at least 50 percent of the tract population is in a small town area the tract is classified as suburban if in an urban or suburban county, otherwise classified as small town.
 
-      At least 50 percent of the tract population is in a large urban area, and the tract is in a large urban county. Classified as suburban if at least 50 percent of the tract population is in a large urban area but the tract is not in a large urban county.
+<b>Small town </b>
 
-Small town
 At least 50 percent of the tract population lives in a small town of any size, and the tract is not classified as suburban or urban.
 
-Rural
+<b>Rural </b>
+
 More than 50 percent of the tract population lives in a rural or small town area of any size, and the tract is not classified as urban, suburban, or small town.
+
+
+<h3>LODES</h3>
+
+The total number of jobs in each tract and the total number of people who live in each tract who have jobs anywhere are estimated using the [EHD Origin-Destination Employment Statistics](https://lehd.ces.census.gov/data/#lodes) from 2002-2022.
+
+<h3>Additional data</h3>
+
+We use the 2010 and 2020 Census data for a robustness check to compare tract-level housing units in the census to the county of active addresses from USPS.
+
+Crosswalks are from HUD and from [MCDC](https://mcdc.missouri.edu/applications/geocorr2022.html)
+
+
+<h2>Methodology</h2>
+
 
