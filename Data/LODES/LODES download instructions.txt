@@ -1,0 +1,5 @@
+LODES Download Instructions
+
+1. Navigate to https://lehd.ces.census.gov/data/#lodes
+
+2. Download the Origin-Destination files for each state-year when available. Some states do not have data for all years. See the provided technical documentation files for details (LODESTechDoc.pdf)

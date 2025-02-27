@@ -1,0 +1,4 @@
+Tract Characteristics Information
+
+
+Tract-specific characteristics come primarily from the American Consumer Survey (ACS), obtained using the tidycensus package in R. Other characteristics are constructed using 2010 OZ tract designations. See the dataset build code (files 1-4) in oz-housing-supply/Code.

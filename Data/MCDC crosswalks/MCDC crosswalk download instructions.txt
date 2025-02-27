@@ -1,0 +1,9 @@
+MCDC crosswalk instructions
+
+1. Navigate to https://mcdc.missouri.edu/applications/geocorr2022.html
+
+2. Under ‘Select one or more source geographies’ select ‘Census block’
+
+3. Under ‘Select one or more target geographies’ select ‘Census tract’
+
+4. Select between 1-13 states at a time to download.
