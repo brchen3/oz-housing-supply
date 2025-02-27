@@ -42,7 +42,7 @@ if (!current_user %in% names(project_directories)) {
 
 path_project <- project_directories[[current_user]]
 
-path_data <- file.path(path_project, "data")
+path_data <- file.path(path_project, "Data")
 path_data_crosswalks <- file.path(path_data, "HUD crosswalks")
 path_data_tract <- file.path(path_data, "Tract Characteristics")
 

@@ -16,10 +16,7 @@ library(ggplot2)
 library(foreign)
 
 project_directories <- list(
-  "bglasner" = "C:/Users/bglasner/EIG Dropbox/Benjamin Glasner/EIG/HUD Agg USPS Administrative Data on Vacancies",
-  "bngla" = "C:/Users/bngla/EIG Dropbox/Benjamin Glasner/EIG/HUD Agg USPS Administrative Data on Vacancies",
-  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/EIG/HUD Agg USPS Administrative Data on Vacancies",
-  "sarah" = "/Users/sarah/EIG Dropbox/Sarah  Eckhardt/HUD Agg USPS Administrative Data on Vacancies"
+  "name" = "PATH TO GITHUB REPO"
 )
 
 # Setting project path based on current user
@@ -30,12 +27,15 @@ if (!current_user %in% names(project_directories)) {
 
 # set user and file paths
 path_project <- project_directories[[current_user]]
-path_data <- file.path(path_project, "data")
+path_data <- file.path(path_project, "Data")
+path_crosswalk <- file.path(path_project, "Data/HUD crosswalks")
+path_output <- file.path(path_project, "Output")
 
 #########################################################################
-# get tract- level data Census decennial files on occuped housing units
+# get tract- level data Census decennial files on occupied housing units
 
-# load in tidycensus variables. variable lists are different for 2010 & 2020
+# load in tidycensus variables. note that variable name structure is different in 2010 & 2020
+
 
 vars2010 <- load_variables(year = 2010, dataset = "sf1", cache = TRUE) # sf1 dropped for 2020.
 vars2010 %>% filter(concept == "OCCUPANCY STATUS") # want occupied units -- H003002
@@ -49,32 +49,27 @@ vars2020 %>% filter(concept == "OCCUPANCY STATUS") # want occupied units -- H3_0
   
     
 # set up census api key
-census_api_key("f0a4d766bde27f14627892a18bdc610ab945336d", install = TRUE, overwrite = TRUE)
+# replace 'ENTER_API_KEY_HERE' with your API key.
+census_api_key("ENTER_API_KEY_HERE", install = TRUE, overwrite = TRUE)
 
 # Reload environment to use the key
 readRenviron("~/.Renviron")
 
 
-
-# retrieve list of states
-states_df <- tigris::states(cb = TRUE) %>%
-  filter(!STUSPS %in% c("AS", "GU", "MP", "PR", "VI")) %>%  # Exclude territories
-  select(NAME, STATEFP, STUSPS) %>%
-  mutate(state_name = NAME,
-         state_fips = STATEFP,
-         state_abbr = STUSPS) %>%
-  as.data.frame() %>%
-  select(state_name, state_fips, state_abbr) %>% 
-  arrange(state_fips)
-
-
-# set year list
-years = c(2010, 2020)
+      # retrieve list of states from tigris.
+      states_df <- tigris::states(cb = TRUE) %>%
+        filter(!STUSPS %in% c("AS", "GU", "MP", "PR", "VI")) %>%  # Exclude territories
+        select(NAME, STATEFP, STUSPS) %>%
+        mutate(state_name = NAME,
+               state_fips = STATEFP,
+               state_abbr = STUSPS) %>%
+        as.data.frame() %>%
+        select(state_name, state_fips, state_abbr) %>% 
+        arrange(state_fips)
 
 
-# create lists to store tidy_census calls
+# create lists to store tidycensus calls
 tract_list = list()
-
 
 # read in each state year; combine
 for(j in seq_along(states_df$state_fips)) {
@@ -111,7 +106,7 @@ for(j in seq_along(states_df$state_fips)) {
 }
 
 
-# compile data   
+# compile data
 decennial_2010_2020 <- bind_rows(tract_list) %>%
   rename_at(c("GEOID", "YEAR"),
             .funs = tolower)
@@ -142,7 +137,7 @@ decennial_2020 <- decennial_2010_2020 %>% filter(year == 2020) %>% # with 2020 t
 
 
 # load crosswalk 2010 -> 2020 tract definitions from IPUMS: https://www.nhgis.org/geographic-crosswalks
-setwd(path_data)
+setwd(path_crosswalk)
 hud_tract_crosswalk = read_excel("CENSUS_TRACT_CROSSWALK_2010_to_2020_2010.xlsx")
 
 
@@ -176,7 +171,9 @@ decennial_2010_2020_tracts_2020 %>%
 
 ################################# 
 # load in HUD counts of addresses
+# see 4. final dataset build.R
   
+setwd(path_data)
 load("USPS_tract_vacancy_2012_2024_2020_definitions_with_earlier_years.RData")
   
 # keep subset. census is collected in Q2.
@@ -192,28 +189,27 @@ USPS_data = USPS_data %>%
 # and HUD address counts.
 
 # generate decade changes
-  decennial_2010_2020_tracts_2020 <- decennial_2010_2020_tracts_2020 %>% ungroup() %>%
-    pivot_wider(names_from = year, values_from = census_occ_housing_units) %>%
+        decennial_2010_2020_tracts_2020 <- decennial_2010_2020_tracts_2020 %>% ungroup() %>%
+          pivot_wider(names_from = year, values_from = census_occ_housing_units) %>%
+          
+          mutate(census_occ_housing_units_chng = round(`2020` - `2010`,0)) %>%
+          select(-c(contains("20")))
+        
+        USPS_data <- USPS_data %>% ungroup() %>%
+          arrange(YEAR) %>%
+          ungroup() %>% group_by(TRACT20) %>%
+          pivot_wider(names_from = YEAR, values_from = ACTIVE_RESIDENTIAL_ADDRESSES) %>%
+          mutate(usps_residential_addreses_chng = `2020` - `2010`) %>%
+          mutate(geoid = as.numeric(TRACT20)) %>%
+          select(-c(`2020`, `2010`)) 
+       
+
+    USPS_decennial = decennial_2010_2020_tracts_2020 %>%
+      right_join(USPS_data) %>% # right join for clean sample subset of tracts
+      na.omit()
     
-    mutate(census_occ_housing_units_chng = round(`2020` - `2010`,0)) %>%
-    select(-c(contains("20")))
-  
-  USPS_data <- USPS_data %>% ungroup() %>%
-    arrange(YEAR) %>%
-    ungroup() %>% group_by(TRACT20) %>%
-    pivot_wider(names_from = YEAR, values_from = ACTIVE_RESIDENTIAL_ADDRESSES) %>%
-    mutate(usps_residential_addreses_chng = `2020` - `2010`) %>%
-    mutate(geoid = as.numeric(TRACT20)) %>%
-    select(-c(`2020`, `2010`)) 
- 
 
-# combine for comparison
-USPS_decennial = decennial_2010_2020_tracts_2020 %>%
-  right_join(USPS_data) %>% # right join for proper subset
-  na.omit()
-
-
-# graph
+# binned scatter
 USPS_decennial %>%
   filter(usps_residential_addreses_chng > -5000) %>%
   filter(usps_residential_addreses_chng < 5000) %>%
@@ -225,9 +221,10 @@ USPS_decennial %>%
          title = "Change in residential units 2010 -> 2020 \n binned scatter") +
   theme_minimal()
 
-# save
-setwd(project_path)
-ggsave("census_usps_2010_2020_bin_overlay.png", bg = "white")  # Save in 'figures/' directory
+    # save graph
+    setwd(path_output)
+    ggsave("census_usps_2010_2020_bin_overlay.png", bg = "white")
 
-  
+
+# check correlation
 cor(USPS_decennial$usps_residential_addreses_chng, USPS_decennial$census_occ_housing_units_chng)

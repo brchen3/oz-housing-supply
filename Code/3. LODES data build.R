@@ -33,8 +33,8 @@ if (!current_user %in% names(project_directories)) {
 }
 
 path_project <- project_directories[[current_user]]
-path_data_crosswalks <- file.path(path_data, "MCDC crosswalks") # https://mcdc.missouri.edu/applications/geocorr2022.html
-path_data_lodes <- file.path(path_project, "data/LODES") # Longitudinal Employer-Household Dynamics https://lehd.ces.census.gov/
+path_data_crosswalks <- file.path(path_data, "Data/MCDC crosswalks") # https://mcdc.missouri.edu/applications/geocorr2022.html
+path_data_lodes <- file.path(path_project, "Data/LODES") # Longitudinal Employer-Household Dynamics https://lehd.ces.census.gov/
 
 
 ################################################################################
