@@ -31,11 +31,7 @@ library(readxl)
 #################
 # Define user-specific project directories
 project_directories <- list(
-  "bglasner" = "C:/Users/bglasner/EIG Dropbox/Benjamin Glasner/EIG/HUD Agg USPS Administrative Data on Vacancies",
-  "bngla" = "C:/Users/bngla/EIG Dropbox/Benjamin Glasner/EIG/HUD Agg USPS Administrative Data on Vacancies",
-  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/EIG/HUD Agg USPS Administrative Data on Vacancies",
-  "sarah" = "/Users/sarah/EIG Dropbox/Sarah  Eckhardt/HUD datacheck",
-  "sarahgit" = "/Users/sarah/Documents/GitHub/oz-housing-supply/"
+  "name" = "PATH TO GITHUB REPO"
   )
 
 # Setting project path based on current user
@@ -47,7 +43,7 @@ if (!current_user %in% names(project_directories)) {
 path_project <- project_directories[[current_user]]
 
 path_data <- file.path(path_project, "data")
-path_data_USPS <- file.path(path_data, "2010 Census Tract Summary Files")
+path_data_crosswalks <- file.path(path_data, "HUD crosswalks")
 path_data_tract <- file.path(path_data, "Tract Characteristics")
 
 ##################
@@ -56,7 +52,7 @@ path_data_tract <- file.path(path_data, "Tract Characteristics")
 
 # Set Census API key
 # Replace 'YOUR_CENSUS_API_KEY' with your actual Census API key
-census_api_key("", install = TRUE, overwrite = TRUE)
+census_api_key("YOUR_CENSUS_API_KEY", install = TRUE, overwrite = TRUE)
 
 # Reload environment to use the key
 readRenviron("~/.Renviron")
@@ -105,16 +101,16 @@ all_variables <- c(
 )
 
 
-# Retrieve list of states and DC using tigris
-states_df <- tigris::states(cb = TRUE) %>%
-  filter(!STUSPS %in% c("AS", "GU", "MP", "PR", "VI")) %>%  # Exclude territories
-  select(NAME, STATEFP, STUSPS) %>%
-  mutate(state_name = NAME,
-         state_fips = STATEFP,
-         state_abbr = STUSPS) %>%
-  as.data.frame() %>%
-  select(state_name, state_fips, state_abbr) %>% 
-  arrange(state_fips)
+    # Retrieve list of states and DC using tigris
+    states_df <- tigris::states(cb = TRUE) %>%
+      filter(!STUSPS %in% c("AS", "GU", "MP", "PR", "VI")) %>%  # Exclude territories
+      select(NAME, STATEFP, STUSPS) %>%
+      mutate(state_name = NAME,
+             state_fips = STATEFP,
+             state_abbr = STUSPS) %>%
+      as.data.frame() %>%
+      select(state_name, state_fips, state_abbr) %>% 
+      arrange(state_fips)
 
 
 # Function to fetch ACS data and calculate metrics for a given year
@@ -200,9 +196,10 @@ ACS_2020_2023 <- ACS_2012_2023 %>%
   mutate(geoid = as.numeric(GEOID)) %>%
   select(geoid, year, poverty_rate:solo_detached_housing_share)
 
-# load 2010 to 2020 crosswalk
+
+# load 2010 to 2020 crosswalk from HUD.
 setwd(path_data)
-CENSUS_TRACT_CROSSWALK <- read_excel("CENSUS_TRACT_CROSSWALK_2010_to_2020_2020.xlsx")
+CENSUS_TRACT_CROSSWALK <- read_excel(file.path(path_data_crosswalks, "CENSUS_TRACT_CROSSWALK_2010_to_2020_2020.xlsx"))
 
 # merge tract info to ACS_2012_2019
 ACS_2012_2019 <- ACS_2012_2019 %>% 
@@ -249,6 +246,8 @@ ACS_2012_2023 <- ACS_2012_2023 %>%
   
 ACS_2012_2023 <- ACS_2012_2023 %>%
   distinct(geoid, year, .keep_all = TRUE) 
+
+
 
 # Save the compiled data
 setwd(path_data_tract)
