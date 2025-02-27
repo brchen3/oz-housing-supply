@@ -39,7 +39,7 @@ path_data_lodes <- file.path(path_project, "Data/LODES") # Longitudinal Employer
 
 ################################################################################
 # read in Census Block - Census tract crosswalk from MCDC and construct.
-# block-based crosswalks are only downloadable in 11 state increments per MCDC's policy.
+# block-based crosswalks are only downloadable in 13 state increments per MCDC's policy.
     
     tract1 = read.csv(paste(
       crosswalk_path,
