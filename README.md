@@ -35,6 +35,7 @@ Suburban
 If at least 50 percent of the tract population is in an urban suburban area of any size the tract is classified as suburban (excluding those already classified as urban) regardless of county type. If at least 50 percent of the tract population is in a small town area the tract is classified as suburban if in an urban or suburban county, otherwise classified as small town. The tract definitions are as follows:
 
 <b>Large urban</b>
+
       At least 50 percent of the tract population is in a large urban area, and the tract is in a large urban county. Classified as suburban if at least 50 percent of the tract population is in a large urban area but the tract is not in a large urban county.
 
 Small town
