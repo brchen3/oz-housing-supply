@@ -14,7 +14,9 @@ United States Department of Housing and Urban Development’s (HUD) Aggregated U
 
 <h3>Eligible and Designated OZ Tracts</h3>
 
-Tracts were categorized as being OZ eligible using 1010 census tract boundary definitions. To  make these compatible, we walk 2010 definitions forward to 2020 definitions using HUD's crosswalk system. We only include tracts whose treatment status remained the same using 2020 boundaries. This means that a tract's area had a single OZ designation status through the boundary change.
+Tracts were categorized as being OZ eligible using 2010 census tract boundary definitions. To  make these compatible, we walk 2010 definitions forward to 2020 definitions using HUD's crosswalk system. We only include tracts whose treatment status remained the same using 2020 boundaries. This means that a tract's area had a single OZ designation status through the boundary change.
+
+Eligibilty categories include Low Income Community (LIC) tracts, xxxx and yyyy.
 
 <h3>Socioeconomic outcomes from the ACS</h3>
 
@@ -59,7 +61,11 @@ We use the 2010 and 2020 Census data for a robustness check to compare tract-lev
 
 Crosswalks are from HUD and from [MCDC](https://mcdc.missouri.edu/applications/geocorr2022.html)
 
+***
 
 <h2>Methodology</h2>
 
+The doubly-robust difference-in-difference estimator from Callaway and Sant'Anna (CSDID) is used 
 
+
+also need some notes about how the tracats are defined.
