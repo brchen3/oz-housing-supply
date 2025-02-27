@@ -65,7 +65,4 @@ Crosswalks are from HUD and from [MCDC](https://mcdc.missouri.edu/applications/g
 
 <h2>Methodology</h2>
 
-The doubly-robust difference-in-difference estimator from Callaway and Sant'Anna (CSDID) is used 
-
-
-also need some notes about how the tracats are defined.
+We utilize the doubly-robust difference-in-differences estimator from Callaway and Sant’Anna (2021) (CSDID). The sample for the CSDID es- timates is all Low Income Community (LIC) tracts that were eligible to be des- ignated as OZs. Those that were designated OZs are the treated group, and those that were not designated are the control group. We exclude contiguous and ineligible tracts from the analysis at this stage.
