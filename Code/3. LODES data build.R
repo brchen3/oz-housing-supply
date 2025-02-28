@@ -23,7 +23,8 @@ library(openxlsx)
 library(R.utils)
 
 project_directories <- list(
-  "name" = "PATH TO GITHUB REPO"
+  "name" = "PATH TO GITHUB REPO",
+  "jiaxinhe" = "/Users/jiaxinhe/Documents/projects/oz-housing-supply"
 )
 
 # Setting project path based on current user
@@ -33,68 +34,27 @@ if (!current_user %in% names(project_directories)) {
 }
 
 path_project <- project_directories[[current_user]]
-path_data_crosswalks <- file.path(path_data, "Data/MCDC crosswalks") # https://mcdc.missouri.edu/applications/geocorr2022.html
-path_data_lodes <- file.path(path_project, "Data/LODES") # Longitudinal Employer-Household Dynamics https://lehd.ces.census.gov/
-
+path_data <- file.path(path_project, "Data")
+path_data_crosswalks <- file.path(path_data, "MCDC crosswalks") # https://mcdc.missouri.edu/applications/geocorr2022.html
+path_data_lodes <- file.path(path_data, "LODES") # Longitudinal Employer-Household Dynamics https://lehd.ces.census.gov/
 
 ################################################################################
 # read in Census Block - Census tract crosswalk from MCDC and construct.
 # block-based crosswalks are only downloadable in 13 state increments per MCDC's policy.
-    
-    tract1 = read.csv(paste(
-      crosswalk_path,
-      "geocorr2022_2500700856.csv",
-      sep="/"
-    )) %>%
-      filter(tract !="Tract")
+setwd(path_data_crosswalks)
+mcdc_files <- list.files(pattern = "\\.csv$", full.names = TRUE)
+xwalk_raw <- bind_rows(lapply(mcdc_files, read.csv)) %>% filter(tract !="Tract")
 
-    tract2 = read.csv(paste(
-      crosswalk_path,
-      "geocorr2022_2500703440.csv",
-      sep="/"
-    ))%>%
-      filter(tract !="Tract")
-
-    
-    tract3 =read.csv(paste(
-      crosswalk_path,
-      "geocorr2022_2500708329.csv",
-      sep="/"
-    ))%>%
-      filter(tract !="Tract")
-
-    
-    tract4 =read.csv(paste(
-      crosswalk_path,
-      "geocorr2022_2500709034.csv",
-      sep="/"
-    ))%>%
-      filter(tract !="Tract")
-
-    
-    tract5 =read.csv(paste(
-      crosswalk_path,
-      "geocorr2022_2500709515.csv",
-      sep="/"
-    ))%>%
-      filter(tract !="Tract")
-
-
-# append tract crosswalks.
+# reformat block and tract geocode and ensure there are no duplicates.
 options(scipen = 999)
-xwalk = bind_rows(tract1, tract2, tract3, tract4, tract5) %>%
-  mutate(block_geocode = paste0(county,tract,block),
-         block_geocode = as.numeric(gsub("\\.","",block_geocode)),
-         tract_geocode = paste0(county, tract),
-         tract_geocode = as.numeric(gsub("\\.","",tract_geocode))) %>% 
-  
-  select(tract_geocode, block_geocode)
+xwalk = xwalk_raw %>% mutate(block_geocode = paste0(county,tract,block),
+                             block_geocode = as.numeric(gsub("\\.","",block_geocode)),
+                             tract_geocode = paste0(county, tract),
+                             tract_geocode = as.numeric(gsub("\\.","",tract_geocode))) %>% 
+  select(tract_geocode, block_geocode) %>% distinct
 
-# ensure there are no duplicates.
-xwalk = xwalk %>% distinct
-
-    # clean up.
-    rm(tract1, tract2, tract3, tract4, tract5)
+# clean up.
+rm(xwalk_raw)
 
 #######################
 # read in LODES data    
@@ -102,11 +62,11 @@ xwalk = xwalk %>% distinct
 # Total people who live in tract who have jobs anywhere,
 # vs total jobs in the tract.
 
+setwd(path_project)
 results_list = list()
 
-files_od = list.files(paste(project_path , "od", sep="/"), pattern = "*.gz")
-
-setwd(paste(project_path , "od", sep="/"))
+files_od = list.files(paste(path_project , "od", sep="/"), pattern = "*.gz")
+setwd(paste(path_project , "od", sep="/"))
 
 for (gz_file in files_od) {
 
