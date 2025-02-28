@@ -1,8 +1,6 @@
 # HUD Aggregated USPS Administrative Data on Vacancies
 # Ben Glasner 10/29/2024
 
-# datacheck Sarah Eckhardt 01/14/2025
-
 rm(list = ls())
 options(scipen = 999)
 set.seed(42)
@@ -18,7 +16,6 @@ library(lubridate)
 library(openxlsx)
 
 ################
-# John list - 
 # use the participation among those who have access from sipp
 # Anyone who increases their contribution, automatically increase to 5% 
 # What is the rate of savings among low-income savers?
@@ -30,10 +27,7 @@ library(openxlsx)
 #################
 # Define user-specific project directories
 project_directories <- list(
-  "bglasner" = "C:/Users/bglasner/EIG Dropbox/Benjamin Glasner/EIG/HUD Agg USPS Administrative Data on Vacancies",
-  "bngla" = "C:/Users/bngla/EIG Dropbox/Benjamin Glasner/EIG/HUD Agg USPS Administrative Data on Vacancies",
-  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/EIG/HUD Agg USPS Administrative Data on Vacancies",
-  "sarah" = "/Users/sarah/EIG Dropbox/Sarah  Eckhardt/HUD datacheck"
+  "name" = "PATH TO GITHUB REPO"
   )
 
 # Setting project path based on current user
