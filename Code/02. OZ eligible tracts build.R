@@ -32,8 +32,6 @@ path_data <- file.path(path_project, "Data")
 path_data_USPS <- file.path(path_data, "HUD USPS Data Standardized") # not publicly available.
 path_data_tract <- file.path(path_data, "Tract Characteristics")
 path_data_crosswalks <- file.path(path_data, "HUD crosswalks")
-
-
 path_output <- file.path(path_project, "output")
 
   
