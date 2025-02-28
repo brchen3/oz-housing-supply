@@ -11,6 +11,7 @@ set.seed(42)
 library(tidyr)
 library(dplyr)
 library(openxlsx)
+library(ggplot2)
 
 #################
 ### Set paths ###
