@@ -34,11 +34,11 @@ if (!current_user %in% names(project_directories)) {
 
 path_project <- project_directories[[current_user]]
 
-path_data = file.path(path_project, "data")
-path_data_USPS <- file.path(path_project, "data/HUD USPS Data Standardized")
-path_data_tract = file.path(path_project, "data/Tract Characteristics")
+path_data = file.path(path_project, "Data")
+path_data_USPS <- file.path(path_project, "Data/HUD USPS Data Standardized")
+path_data_tract = file.path(path_project, "Data/Tract Characteristics")
 
-path_output = file.path(path_project, "output")
+path_output = file.path(path_project, "Output")
 
 #################
 ### Data load ###

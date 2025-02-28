@@ -29,19 +29,19 @@ if (!current_user %in% names(project_directories)) {
 
 path_project <- project_directories[[current_user]]
 
-path_data = file.path(path_project, "data")
-path_data_USPS <- file.path(path_project, "data/HUD USPS Data Standardized")
-path_data_tract = file.path(path_project, "data/Tract Characteristics")
+path_data = file.path(path_project, "Data")
+path_data_USPS <- file.path(path_project, "Data/HUD USPS Data Standardized")
+path_data_tract = file.path(path_project, "Data/Tract Characteristics")
 
-path_output = file.path(path_project, "output")
+path_output = file.path(path_project, "Output")
+
+# Read in DID output
+did_results <- read.xlsx(file.path(path_output, "CSDID Effect Estimate.xlsx"))
 
 # Additional calculations based on the provided text
-avg_effect <- 35.66         # average new addresses per OZ tract
-# avg_effect <- 32.68         # average new addresses per OZ tract after excluding bordering tracts
+avg_effect <- did_results %>% filter(Tract.Geography == "All") %>%
+  select(Active.and.Vacant.Residential)  # average new addresses per OZ tract
 oz_tracts <- 8764           # total number of OZ tracts
-
-# avg_crowd_out <- 7.82
-# border_tracts <- 
   
 oz_new_estimated <- avg_effect * oz_tracts  # estimated new addresses due to OZs
 cost <- 8200000000
