@@ -14,9 +14,7 @@ United States Department of Housing and Urban Development’s (HUD) Aggregated U
 
 <h3>Eligible and Designated OZ Tracts</h3>
 
-Tracts were categorized as being OZ eligible using 2010 census tract boundary definitions. To  make these compatible, we walk 2010 definitions forward to 2020 definitions using HUD's crosswalk system. We only include tracts whose treatment status remained the same using 2020 boundaries. This means that a tract's area had a single OZ designation status through the boundary change.
-
-Eligibilty categories include Low Income Community (LIC) tracts, xxxx and yyyy.
+Tracts were categorized as being OZ eligible using 2010 census tract boundary definitions. To  make these compatible, we walk 2010 definitions forward to 2020 definitions using HUD's crosswalk system. We only include tracts whose treatment status remained the same using 2020 boundaries. This means that a tract's area had a single OZ designation status through the boundary change. Eligibilty categories include Low Income Community (LIC) tracts, Contiguous tracts, and ineligible tracts.
 
 <h3>Socioeconomic outcomes from the ACS</h3>
 
@@ -65,4 +63,6 @@ Crosswalks are from HUD and from [MCDC](https://mcdc.missouri.edu/applications/g
 
 <h2>Methodology</h2>
 
-We utilize the doubly-robust difference-in-differences estimator from Callaway and Sant’Anna (2021) (CSDID). The sample for the CSDID es- timates is all Low Income Community (LIC) tracts that were eligible to be des- ignated as OZs. Those that were designated OZs are the treated group, and those that were not designated are the control group. We exclude contiguous and ineligible tracts.
+We utilize the doubly-robust difference-in-differences estimator from Callaway and Sant’Anna (2021) (CSDID). The sample for the CSDID estimates is all Low Income Community (LIC) tracts that were eligible to be designated as OZs. Those that were designated OZs are the treated group, and those that were not designated are the control group. We exclude contiguous and ineligible tracts.
+
+
