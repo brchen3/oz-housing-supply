@@ -65,8 +65,8 @@ rm(xwalk_raw)
 setwd(path_project)
 results_list = list()
 
-files_od = list.files(paste(path_project , "od", sep="/"), pattern = "*.gz")
-setwd(paste(path_project , "od", sep="/"))
+files_od = list.files(path_data_lodes, pattern = "*.gz")
+setwd(path_data_lodes)
 
 for (gz_file in files_od) {
 
