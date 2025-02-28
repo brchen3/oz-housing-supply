@@ -42,7 +42,6 @@ path_output = file.path(path_project, "output")
 setwd(path_data)
 load(file = "USPS_tract_vacancy_2012_2024_2020_definitions.RData") # master data set. see 4. final dataset build.R
 
-
 ################
 # Clean up uncertain tracts from the crosswalk
 # If a tract in 2020 is a mix of any version of:
@@ -128,7 +127,7 @@ summary_statement <- paste0(
 print(summary_statement)
 
 # If you compare designated OZs to overall tracts, did OZs have a stronger pre-trend of address growth?
-# Compare address growth rates
+# Aggregate annual address count changes
 Count_add  <- USPS_data %>%
   filter(YEAR_MONTH %in% c("2014-09","2015-09","2016-09","2017-09","2018-09","2019-09","2020-09","2021-09","2022-09","2023-09","2024-09"))  %>% 
   mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
@@ -145,6 +144,7 @@ Count_add  <- USPS_data %>%
   pivot_wider(names_from = `Designation_category`, values_from = `Active and Vacant, Residential`) %>%
   rename(`Time Period` = YEAR_MONTH)
 
+# Calculate annual growth in address counts
 growth  <- USPS_data %>%
   filter(YEAR_MONTH %in% c("2014-09","2015-09","2016-09","2017-09","2018-09","2019-09","2020-09","2021-09","2022-09","2023-09","2024-09"))  %>% 
   mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
@@ -177,7 +177,7 @@ write.xlsx(growth, file = "Total Address Growth Rate.xlsx")
 
 ########################
 # Simplified version
-Count_add  <- USPS_data %>%
+Count_add_simple  <- USPS_data %>%
   filter(YEAR_MONTH %in% c("2014-09","2015-09","2016-09","2017-09","2018-09","2019-09","2020-09","2021-09","2022-09","2023-09","2024-09"))  %>% 
   mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
          `OZ designation` = case_when(
@@ -193,7 +193,7 @@ Count_add  <- USPS_data %>%
   pivot_wider(names_from = `OZ designation`, values_from = `Active and Vacant, Residential`) %>%
   rename(`Time Period` = YEAR_MONTH)
 
-growth  <- USPS_data %>%
+growth_simple  <- USPS_data %>%
   filter(YEAR_MONTH %in% c("2014-09","2015-09","2016-09","2017-09","2018-09","2019-09","2020-09","2021-09","2022-09","2023-09","2024-09"))  %>% 
   mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
          `OZ designation` = case_when(
@@ -224,9 +224,9 @@ growth <- bind_rows(Count_add, growth)
 write.xlsx(growth, file = "Total Address Growth Rate, simplified.xlsx")
 
 ########################
-# Simplified version - growth rate
+# Simplified version - growth rate - for generating line plot
 
-growth  <- USPS_data %>%
+growth_rate_simple  <- USPS_data %>%
   filter(YEAR_MONTH %in% c("2014-09","2015-09","2016-09","2017-09","2018-09","2019-09","2020-09","2021-09","2022-09","2023-09","2024-09"))  %>% 
   mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
          `OZ designation` = case_when(
@@ -247,4 +247,4 @@ growth  <- USPS_data %>%
   select(YEAR,`OZ designation`,growth_rate) %>%
   pivot_wider(names_from = `OZ designation`, values_from = growth_rate) 
 
-write.xlsx(growth, file = "Total Address Growth Rate, simplified line plot.xlsx")
+write.xlsx(growth_rate_simple, file = "Total Address Growth Rate, simplified line plot.xlsx")

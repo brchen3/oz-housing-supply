@@ -42,7 +42,6 @@ path_output = file.path(path_project, "output")
 setwd(path_data)
 load(file = "USPS_tract_vacancy_2012_2024_2020_definitions.RData") # master data set. see 4. final dataset build.R
 
-
 ################
 # Clean up uncertain tracts from the crosswalk
 # If a tract in 2020 is a mix of any version of:
@@ -70,9 +69,9 @@ USPS_data <- USPS_data %>%
     )
   ) 
 
-####################################
-###           Time Series        ###
-####################################
+##########################################
+###     Time Series for all tracts     ###
+##########################################
 annual <- USPS_data %>%
   group_by(date) %>%
   summarise(`Total residential address count` = sum(TOTAL_RESIDENTIAL_ADDRESSES, na.rm = TRUE),
@@ -80,9 +79,9 @@ annual <- USPS_data %>%
             `Active residential address count` = sum(ACTIVE_RESIDENTIAL_ADDRESSES, na.rm = TRUE))
 write.csv(annual,file = file.path(path_output,"time series.csv"), row.names = FALSE)
 
-####################################
-###         Time Series  - LIC   ###
-####################################
+######################################
+###     Time Series - Cut by LIC   ###
+######################################
 
 annual <- USPS_data %>%
   filter(`Designation_category` %in% c("LIC not selected","LIC selected")) %>%
@@ -97,13 +96,13 @@ write.csv(annual,file = file.path(path_output,"time series LIC.csv"), row.names 
 ###   Share of addresses over time   ###
 ########################################
 
+# Generate share of USPS addresses by OZ designation and eligibility
 share_designation <- USPS_data %>%
   mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES) %>%
   group_by(`Designation_category`,date) %>%
   summarise(`Active and Vacant, Residential` = sum(`Active and Vacant, Residential`, na.rm = TRUE), 
             ACTIVE_RESIDENTIAL_ADDRESSES = sum(ACTIVE_RESIDENTIAL_ADDRESSES, na.rm = TRUE), .groups = 'drop') %>%
   group_by(date) %>%
-  # mutate(share = ACTIVE_RESIDENTIAL_ADDRESSES / sum(ACTIVE_RESIDENTIAL_ADDRESSES, na.rm = TRUE)) %>%
   mutate(share = `Active and Vacant, Residential` / sum(`Active and Vacant, Residential`, na.rm = TRUE)) %>%
   arrange(date, desc(share)) %>%
   mutate(share_percent = round(share * 100, 2)) %>%
@@ -112,6 +111,7 @@ share_designation <- USPS_data %>%
   mutate(share_normalized = round((`Active and Vacant, Residential` / first(`Active and Vacant, Residential`)) * 100, 2)) %>%
   ungroup()
 
+# Plot the share of USPS addresses by OZ designation and eligibility
 share_designation %>%
   filter(`Designation_category` %in% c("LIC not selected","LIC selected","Ineligible")) %>%
   ggplot(aes(x = date, 
@@ -121,6 +121,7 @@ share_designation %>%
   geom_line() + 
   geom_point()
 
+# Pivot wide for display
 share_designation_wide <- share_designation %>%
   select(Designation_category,date,share_percent) %>%
   pivot_wider(
@@ -128,6 +129,7 @@ share_designation_wide <- share_designation %>%
     values_from = share_percent
   )
 
+# Plot for all designation categories
 share_designation %>%
   ggplot(aes(x = date, 
              y =share_percent,
