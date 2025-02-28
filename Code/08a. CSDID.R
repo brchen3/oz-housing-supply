@@ -40,9 +40,9 @@ path_project <- project_directories[[current_user]]
 
 path_data <- file.path(path_project, "data")
 path_data_USPS <- file.path(path_project, "data/2020 Standardized")
-path_data_tract = file.path(path_data, "Tract Characteristics")
+path_data_tract <- file.path(path_data, "Tract Characteristics")
 
-path_output = file.path(path_project, "output")
+path_output <- file.path(path_project, "output")
 
 #################
 ### Data load ###
