@@ -115,6 +115,7 @@ USPS_data <- USPS_data %>%
     log_other_address = if_else(log_other_address<0,NA,log_other_address)
     )
 
+# Count the number of quarters covered by the data set for each tract
 USPS_data <- USPS_data %>%
   distinct(geoid, date, .keep_all = TRUE) %>%
   group_by(geoid) %>%
@@ -123,56 +124,59 @@ USPS_data <- USPS_data %>%
 
 max_quarters <- max(USPS_data$number_of_quarters)
 
+# Filter out tracts with missing quarters
 USPS_data <- USPS_data %>%
   filter(number_of_quarters == max_quarters) %>%
   mutate( NO_STAT_ALL = case_when(
     date == "2017-09-01" ~ NA,
     TRUE ~ NO_STAT_ALL
   ))
-  
 
+#######################
+### Build DID Model ###
+#######################
+# Variable initialization
 data_list <- list()
 dynamic_results_list <- list()
 csdid_treated<- list()
 dynamic <- list()
 outcome_vars <- list()
+plot_data <- list()
+plot_data_list <- list()
+dates <- sort(unique(USPS_data$date))[2:length(sort(unique(USPS_data$date)))]
+plots <- list()
+plot_list <- list()
 
+# List the column names of the variables
 outcome_vars[[1]] <- c(
   "Total_active_vacant_exclude_nostat"
   , "log_total_active_vacant_exclude_nostat"
-  # , "VACANCY_RATE_ALL"
   
   , "Total_active_vacant_exclude_nostat_RESIDENTIAL"
   , "log_res_address"
-  # , "VACANCY_RATE_RESIDENTIAL"
   
   , "Total_active_vacant_exclude_nostat_BUSINESS"
   , "log_bus_address"
-  # , "VACANCY_RATE_BUSINESS"
   
   , "Total_active_vacant_exclude_nostat_OTHER"
   , "log_other_address"
-  # , "VACANCY_RATE_OTHER"
   
   , "ACTIVE_RESIDENTIAL_ADDRESSES"
 )
 
+# Generate outcome table titles
 titles <- c(
   "Effect on All Active and Vacant"
   , "Effect on Log(All Active and Vacant)"
-  # , "Effect on Total Vacancy Rate"
   
   , "Effect on  Active and Vacant Residential"
   , "Effect on Log(Active Residential)"
-  # , "Effect on Residential Vacancy Rate"
 
   , "Effect on  Active and Vacant Business"
   , "Effect on Log( Active and Vacant Business)"
-  # , "Effect on Business Vacancy Rate"
 
   , "Effect on  Active and Vacant Other"
   , "Effect on Log( Active and Vacant Other)"
-  # , "Effect on Other Vacancy Rate"
   
   , "ACTIVE_RESIDENTIAL_ADDRESSES"
 )
@@ -180,56 +184,41 @@ titles <- c(
 table_titles <- c(
   "All Active and Vacant"
   , "Log(All Active and Vacant)"
-  # , "Total Vacancy Rate"
   
   , "Active and Vacant Residential"
   , "Log(Active and Vacant Residential)"
-  # , "Residential Vacancy Rate"
 
   , "Active and Vacant Business"
   , "Log(Active and Vacant Business)"
-  # , "Business Vacancy Rate"
 
   , "Active and Vacant Other"
   , "Log(Active and Vacant Other)"
-  # , "Other Vacancy Rate"
   
   , "ACTIVE_RESIDENTIAL_ADDRESSES"
-  
 )
 
 titles_df <- as.data.frame(cbind(table_titles, outcome_vars[[1]]))
 names(titles_df) <- c("titles", "outcome_var")
 
+# Get sorted list of geoids for the census tracts of interest
 Metro_groupings <- sort(unique(USPS_data$`Type tract`))
-# Metro_groupings <- c("Large urban")
-
-# Metro_groupings <- sort(unique(USPS_data$res_quintile))
-
 geo_groupings <- c("All",Metro_groupings)
 
-plot_data <- list()
-plot_data_list <- list()
-dates <- sort(unique(USPS_data$date))[2:length(sort(unique(USPS_data$date)))]
-plots <- list()
-plot_list <- list()
-
-
-
+# Split data by census tract
 data_list[[1]] <- USPS_data
 for(i in seq_along(Metro_groupings)){
   j <- i + 1
-  
   data_list[[j]] <- USPS_data %>% filter(`Type tract` == Metro_groupings[[i]])
-  # data_list[[j]] <- USPS_data %>% filter(`res_quintile` == Metro_groupings[[i]])
 }
 
+# Transform time variable
 dates_df <- USPS_data %>%
   select(period, date) %>%
   distinct() %>%
   arrange(period) %>% 
   mutate(period = period - period_value)
 
+# Create the DID model and plot the pre-post treatment comparison
 for (j in seq_along(geo_groupings)){
   print(geo_groupings[[j]])
   
@@ -243,8 +232,6 @@ for (j in seq_along(geo_groupings)){
       analysis_data <- data_list[[j]]
     }
     
-    
-    
     csdid_treated[[i]] <- att_gt(
       yname = outcome_vars[[1]][[i]],
       tname = "period",
@@ -252,21 +239,13 @@ for (j in seq_along(geo_groupings)){
       gname = "G",
       xformla = ~poverty_rate + median_income + unemployment_rate + prime_age_share,
       biters = 1000,
-      # clustervars = "State",
-      # anticipation = 4,
       pl = TRUE,
-      # cores = 6,
-      # print_details = TRUE,
-      # allow_unbalanced_panel = TRUE,
       data = analysis_data
     )
     
     dynamic[[i]] <- aggte(csdid_treated[[i]], 
-                          # alp = 0.1,
-                          # alp = 0.05,
                           alp = 0.01,
                           type = "dynamic",
-                          # clustervars = "State",
                           na.rm = TRUE) 
     
     using <- data.frame(cbind(dynamic[[i]][["egt"]],
@@ -332,14 +311,11 @@ for (j in seq_along(geo_groupings)){
       geom_point(aes(y = ATT)) + 
       geom_errorbar(aes(ymin = Lower, ymax = Upper)) + 
       
-      # Titles and theme
-      # ggtitle(label = titles[[i]], 
-              # subtitle = geo_groupings[[j]]) + 
-      
+      # Theme and axis labels
       theme_minimal() +
-      
       ylab("Average Treatment on the Treated") + 
       xlab("Date") + 
+      
       # Custom colors for Pre/Post Treatment
       scale_color_manual(
         values = c("Pre-Treatment" = "grey60", "Post-Treatment" = "grey10"), 
