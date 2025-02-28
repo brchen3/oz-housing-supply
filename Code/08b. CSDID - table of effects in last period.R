@@ -59,9 +59,6 @@ USPS_data <- USPS_data %>%
   # filter(`Designation_category_detailed` != "LIC not selected, border tract") %>%
   mutate(NO_STAT_ALL = NO_STAT_OTHER_ADDRESSES + NO_STAT_BUSINESS_ADDRESSES + NO_STAT_RESIDENTIAL_ADDRESSES)
 
-
-# table(USPS_data$date)
-
 #################
 ### What are the trends in vacancy (counts and share) across designated and undesignated but eligible tracts? 
 #################
@@ -114,6 +111,7 @@ USPS_data <- USPS_data %>%
     log_other_address = if_else(log_other_address<0,NA,log_other_address)
     )
 
+# Filtering out tracts with missing data, copied from 08a
 USPS_data <- USPS_data %>%
   distinct(geoid, date, .keep_all = TRUE) %>%
   group_by(geoid) %>%
@@ -135,13 +133,19 @@ USPS_data <- USPS_data %>%
   filter( period == max(period) | period < period_value) %>%
   mutate(period = if_else(period > period_value, period_value, period))
 
-
+# Variable initialization
 data_list <- list()
 dynamic_results_list <- list()
 csdid_treated<- list()
 dynamic <- list()
 outcome_vars <- list()
+plot_data <- list()
+plot_data_list <- list()
+dates <- sort(unique(USPS_data$date))[2:length(sort(unique(USPS_data$date)))]
+plots <- list()
+plot_list <- list()
 
+# Dependent variable
 outcome_vars[[1]] <- c(
   "Total_active_vacant_exclude_nostat_RESIDENTIAL"
   , "log_res_address"
@@ -160,27 +164,13 @@ table_titles <- c(
 titles_df <- as.data.frame(cbind(table_titles, outcome_vars[[1]]))
 names(titles_df) <- c("titles", "outcome_var")
 
+# Split data by tract
 Metro_groupings <- sort(unique(USPS_data$`Type tract`))
-# Metro_groupings <- c("Large urban")
-
-# Metro_groupings <- sort(unique(USPS_data$res_quintile))
-
 geo_groupings <- c("All",Metro_groupings)
-
-plot_data <- list()
-plot_data_list <- list()
-dates <- sort(unique(USPS_data$date))[2:length(sort(unique(USPS_data$date)))]
-plots <- list()
-plot_list <- list()
-
-
-
 data_list[[1]] <- USPS_data
 for(i in seq_along(Metro_groupings)){
   j <- i + 1
-  
   data_list[[j]] <- USPS_data %>% filter(`Type tract` == Metro_groupings[[i]])
-  # data_list[[j]] <- USPS_data %>% filter(`res_quintile` == Metro_groupings[[i]])
 }
 
 dates_df <- USPS_data %>%
@@ -189,20 +179,20 @@ dates_df <- USPS_data %>%
   arrange(period) %>% 
   mutate(period = period - period_value)
 
+# Create the DID model and plot the pre-post treatment comparison
 for (j in seq_along(geo_groupings)){
   print(geo_groupings[[j]])
   
   for(i in seq_along(outcome_vars[[1]])){
     print(outcome_vars[[1]][[i]])
     
+    # filter job and employment data by year
     if(outcome_vars[[1]][[i]] %in% c("jobs_in_tract","employed_tract_residents")){
       analysis_data <- data_list[[j]] %>%
         filter(MONTH =="12")
     }else{
       analysis_data <- data_list[[j]]
     }
-    
-    
     
     csdid_treated[[i]] <- att_gt(
       yname = outcome_vars[[1]][[i]],
@@ -211,21 +201,15 @@ for (j in seq_along(geo_groupings)){
       gname = "G",
       xformla = ~poverty_rate + median_income + unemployment_rate + prime_age_share,
       biters = 1000,
-      # clustervars = "State",
-      # anticipation = 4,
       pl = TRUE,
-      # cores = 6,
-      # print_details = TRUE,
-      # allow_unbalanced_panel = TRUE,
       data = analysis_data
     )
     
+    # compute the overall effect by averaging the effect of the treatment across
+    # all positive lengths of exposure
     dynamic[[i]] <- aggte(csdid_treated[[i]], 
                           alp = 0.1,
-                          # alp = 0.05,
-                          # alp = 0.01,
                           type = "dynamic",
-                          # clustervars = "State",
                           na.rm = TRUE) 
     
     using <- data.frame(cbind(dynamic[[i]][["egt"]],
@@ -235,6 +219,7 @@ for (j in seq_along(geo_groupings)){
     
     using_dates <- dates_df %>% filter(period %in% c(using$Period))
     
+    # Export data for treatment and experiment lines to graph
     plot_data[[i]] <- using %>% 
       mutate(
         Row = row_number(),
@@ -247,6 +232,7 @@ for (j in seq_along(geo_groupings)){
           TRUE ~ NA
         )
       )
+
     # Create a data frame for the vline information
     vline_data <- data.frame(
       date = as.Date(c("2017-12-20", "2018-06-14", "2019-12-19")),
@@ -280,13 +266,11 @@ for (j in seq_along(geo_groupings)){
       ) +
       guides(linetype = "none") + 
       theme(legend.position = "right")
-    
   }
   
   dynamic_results_list[[j]] <- dynamic
   plot_data_list[[j]] <- plot_data
   plot_list[[j]] <- plots
-  
 }
 
 # Initialize the results_export_list with all combinations
@@ -311,9 +295,6 @@ for (k in seq_len(nrow(results_export_list))) {
   geo_index <- which(geo_groupings == current_geo)
   outcome_index <- which(outcome_vars[[1]] == current_outcome)
   
-  # Number of periods estimated 
-  # time_period_count <- length(dynamic_results_list[[geo_index]][[outcome_index]]$att.egt)
-  
   # Extract ATT, SE, and critical value
   att <- dynamic_results_list[[geo_index]][[outcome_index]]$overall.att
   crit_val <- dynamic_results_list[[geo_index]][[outcome_index]]$crit.val.egt[1]
@@ -328,12 +309,10 @@ for (k in seq_len(nrow(results_export_list))) {
   }else{
     se <- round(dynamic_results_list[[geo_index]][[outcome_index]]$overall.se,4)
     
-    
     formatted_coef[k] <- paste0(
       round(att, 4), " ",
       if_else((att / se) > crit_val, "*", ""))
   }
-  
   
   # Store the standard error
   se_values[k] <- se
@@ -375,7 +354,7 @@ final_table <- coef_table %>%
     `All`,`Large urban`,`Mid-sized urban`,`Small urban`,`Suburban`,`Small town`,`Rural`
   )
 
-
+# Pivot table to horizontal for datawrapper display
 reshaped_table <- final_table %>%
   pivot_longer(
     cols = c(`All`, `Large urban`, `Mid-sized urban`, `Small urban`, `Suburban`, `Small town`, `Rural`),
@@ -389,11 +368,6 @@ reshaped_table <- final_table %>%
   arrange(match(geo_grouping, c("All", "Large urban", "Mid-sized urban", "Small urban", "Suburban", "Small town", "Rural"))) %>%
   select(geo_grouping,all_of(table_titles)) %>%
   rename(`Tract Geography` = geo_grouping)
-  
-
-
-reshaped_table
 
 setwd(path_output)
 write.xlsx(reshaped_table, file = "CSDID Effect Estimate.xlsx", overwrite = TRUE)
-

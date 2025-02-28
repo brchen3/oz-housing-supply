@@ -427,7 +427,7 @@ final_table <- coef_table %>%
     `All`,`Large urban`,`Mid-sized urban`,`Small urban`,`Suburban`,`Small town`,`Rural`
   )
 
-
+# Pivot table to horizontal for datawrapper display
 reshaped_table <- final_table %>%
   pivot_longer(
     cols = c(`All`, `Large urban`, `Mid-sized urban`, `Small urban`, `Suburban`, `Small town`, `Rural`),
@@ -441,16 +441,10 @@ reshaped_table <- final_table %>%
   arrange(match(geo_grouping, c("All", "Large urban", "Mid-sized urban", "Small urban", "Suburban", "Small town", "Rural"))) %>%
   select(geo_grouping,all_of(table_titles)) %>%
   rename(`Tract Geography` = geo_grouping)
-  
-
 
 reshaped_table
 
 setwd(path_output)
-# write.xlsx(reshaped_table, file = "CSDID Effect Estimate - testing.xlsx", overwrite = TRUE)
-
-# write.xlsx(reshaped_table, file = "CSDID Effect Estimate.xlsx", overwrite = TRUE)
-# write.xlsx(reshaped_table, file = "CSDID Effect Estimate no border tracts.xlsx", overwrite = TRUE)
 
 png(file = "CSDID Event Study All Active and Vacant.png",width = 800, height = 533)
 plot_list[[1]][[1]]
@@ -460,11 +454,9 @@ png(file = "CSDID Event Study Logged All Active and Vacant.png",width = 800, hei
 plot_list[[1]][[2]]
 dev.off()
 
-
 pdf(file = "CSDID Event Studies.pdf",width = 12, height = 8)
 plot_list
 dev.off()
-
 
 # Selected list of significant impacts
 export_plot_list <- list()
