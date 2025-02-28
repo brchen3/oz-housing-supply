@@ -24,7 +24,6 @@ library(R.utils)
 
 project_directories <- list(
   "name" = "PATH TO GITHUB REPO",
-  "jiaxinhe" = "/Users/jiaxinhe/Documents/projects/oz-housing-supply"
 )
 
 # Setting project path based on current user
