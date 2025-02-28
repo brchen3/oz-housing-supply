@@ -82,11 +82,12 @@ table(USPS_data$date, USPS_data$Group_var)
 ### Descriptive Statistics Table ###
 ####################################
 
+# Step 1: trim data to the study period
 table_df <- USPS_data %>%
   filter(date == "2017-03-01") %>% 
   mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES)
   
-
+# Step 2: Aggregate USPS address counts
 address_counts <- table_df %>%
   filter(!is.na(Group_var)) %>%
   group_by(Group_var) %>%
@@ -169,6 +170,7 @@ desired_order <- c(
   "Number of Tracts"
 )
 
+# Step 9: output the final table for datawrapper
 final_table <- final_table %>%
   mutate(Outcome = if_else(Outcome == "Median Number of Tracts", "Number of Tracts", Outcome)) %>%
   mutate(Outcome = factor(Outcome, levels = desired_order)) %>%
@@ -181,10 +183,11 @@ final_table <- final_table %>%
 setwd(path_output)
 write.csv(final_table, file = "Descriptive Table.csv", row.names = FALSE)
 
-####################################################################################################
+################################################
+### Output USPS address counts by tract type ###
+################################################
 
-### Split by tract type
-
+# Split the addresses in LIC by whether or not the tract is designated OZ
 summarized <- USPS_data  %>%
   filter(`Designation_category` %in% c("LIC not selected","LIC selected")) %>%
   mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES) %>% 
@@ -195,14 +198,14 @@ summarized <- USPS_data  %>%
     `OZ Designation`
   ) 
 
-
+# Summarize address counts in designated / not designated LIC
 summarized <- summarized %>%
   group_by(`OZ Designation`,`Type tract`, date) %>%
   summarise(
     `Typical Active and Vacant, Residential` = median(`Active and Vacant, Residential`, na.rm = TRUE)
   )
 
-
+# Plot the trend in address counts after OZ came into effect
 summarized %>%
   filter(!is.na(`Type tract`)) %>% 
   ggplot(aes(x = date,
@@ -213,6 +216,7 @@ summarized %>%
   geom_point(aes(y = `Typical Active and Vacant, Residential`)) + 
   facet_wrap(`OZ Designation` ~ .)
 
+# Reshape data to better display the difference between OZ/non-OZ
 reshaped_data <- summarized %>%
   filter(!is.na(`Type tract`)) %>% 
   pivot_longer(cols = starts_with("Typical") | starts_with("Growth Rate") | starts_with("Share"),
