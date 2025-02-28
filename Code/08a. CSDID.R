@@ -147,7 +147,7 @@ dates <- sort(unique(USPS_data$date))[2:length(sort(unique(USPS_data$date)))]
 plots <- list()
 plot_list <- list()
 
-# List the column names of the variables
+# List the column names of the dependent variables
 outcome_vars[[1]] <- c(
   "Total_active_vacant_exclude_nostat"
   , "log_total_active_vacant_exclude_nostat"
@@ -164,7 +164,7 @@ outcome_vars[[1]] <- c(
   , "ACTIVE_RESIDENTIAL_ADDRESSES"
 )
 
-# Generate outcome table titles
+# Generate dependent variable table titles
 titles <- c(
   "Effect on All Active and Vacant"
   , "Effect on Log(All Active and Vacant)"
@@ -225,6 +225,7 @@ for (j in seq_along(geo_groupings)){
   for(i in seq_along(outcome_vars[[1]])){
     print(outcome_vars[[1]][[i]])
     
+    # filter job and employment data by year
     if(outcome_vars[[1]][[i]] %in% c("jobs_in_tract","employed_tract_residents")){
       analysis_data <- data_list[[j]] %>%
         filter(MONTH =="12")
@@ -232,6 +233,7 @@ for (j in seq_along(geo_groupings)){
       analysis_data <- data_list[[j]]
     }
     
+    # create linear model for the treated group
     csdid_treated[[i]] <- att_gt(
       yname = outcome_vars[[1]][[i]],
       tname = "period",
@@ -243,6 +245,8 @@ for (j in seq_along(geo_groupings)){
       data = analysis_data
     )
     
+    # compute the overall effect by averaging the effect of the treatment across
+    # all positive lengths of exposure
     dynamic[[i]] <- aggte(csdid_treated[[i]], 
                           alp = 0.01,
                           type = "dynamic",
@@ -255,6 +259,7 @@ for (j in seq_along(geo_groupings)){
     
     using_dates <- dates_df %>% filter(period %in% c(using$Period))
     
+    # Export data for treatment and experiment lines to graph
     plot_data[[i]] <- using %>% 
       mutate(
         Row = row_number(),
