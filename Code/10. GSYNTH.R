@@ -35,9 +35,7 @@ library(progress)
 #################
 # Define user-specific project directories
 project_directories <- list(
-  "bglasner" = "C:/Users/bglasner/EIG Dropbox/Benjamin Glasner/EIG/HUD Agg USPS Administrative Data on Vacancies",
-  "bngla" = "C:/Users/bngla/EIG Dropbox/Benjamin Glasner/EIG/HUD Agg USPS Administrative Data on Vacancies",
-  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/EIG/HUD Agg USPS Administrative Data on Vacancies"
+    "name" = "PATH TO GITHUB REPO"
 )
 
 # Setting project path based on current user
