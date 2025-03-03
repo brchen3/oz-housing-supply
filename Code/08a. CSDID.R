@@ -356,59 +356,6 @@ for (k in seq_len(nrow(results_export_list))) {
   se_values[k] <- se
 }
 
-# Add the formatted coefficients and SEs to the results_export_list
-results_export_list <- results_export_list %>%
-  mutate(
-    Coef = formatted_coef,
-    SE = se_values
-  )
-
-# Pivot coefficients to wide format
-coef_table <- results_export_list %>%
-  select(geo_grouping, outcome_var, Coef) %>%
-  pivot_wider(names_from = geo_grouping, values_from = Coef, names_prefix = "Coef_")
-
-# Pivot SEs to wide format
-se_table <- results_export_list %>%
-  select(geo_grouping, outcome_var, SE) %>%
-  pivot_wider(names_from = geo_grouping, values_from = SE, names_prefix = "SE_")
-
-# Combine the coefficients and SE tables
-final_table <- coef_table %>%
-  left_join(se_table, by = "outcome_var") %>%
-  arrange(outcome_var) %>%
-  mutate(
-    `All` = paste0(`Coef_All`," (",`SE_All`,")"),
-    `Large urban` = paste0(`Coef_Large urban`," (",`SE_Large urban`,")"),
-    `Mid-sized urban` = paste0(`Coef_Mid-sized urban`," (",`SE_Mid-sized urban`,")"),
-    `Small urban` = paste0(`Coef_Small urban`," (",`SE_Small urban`,")"),
-    `Suburban` = paste0(`Coef_Suburban`," (",`SE_Suburban`,")"),
-    `Small town` = paste0(`Coef_Small town`," (",`SE_Small town`,")"),
-    `Rural` = paste0(`Coef_Rural`," (",`SE_Rural`,")"),
-         ) %>%
-  left_join(titles_df) %>%
-  select(
-    titles,
-    `All`,`Large urban`,`Mid-sized urban`,`Small urban`,`Suburban`,`Small town`,`Rural`
-  )
-
-# Pivot table to horizontal for datawrapper display
-reshaped_table <- final_table %>%
-  pivot_longer(
-    cols = c(`All`, `Large urban`, `Mid-sized urban`, `Small urban`, `Suburban`, `Small town`, `Rural`),
-    names_to = "geo_grouping",
-    values_to = "Coef_SE"
-  ) %>%
-  pivot_wider(
-    names_from = titles,
-    values_from = Coef_SE
-  ) %>%
-  arrange(match(geo_grouping, c("All", "Large urban", "Mid-sized urban", "Small urban", "Suburban", "Small town", "Rural"))) %>%
-  select(geo_grouping,all_of(table_titles)) %>%
-  rename(`Tract Geography` = geo_grouping)
-
-reshaped_table
-
 setwd(path_output)
 
 png(file = "CSDID Event Study All Active and Vacant.png",width = 800, height = 533)
@@ -425,34 +372,34 @@ dev.off()
 
 # Selected list of significant impacts
 export_plot_list <- list()
-export_plot_list[[1]] <- plot_data_list[[1]][[1]] # All tracts, Active and Vacant 
-export_plot_list[[2]] <- plot_data_list[[1]][[2]] # All tracts, log(Active and Vacant) 
-export_plot_list[[3]] <- plot_data_list[[1]][[3]] # All tracts, Active and Vacant Residential
-export_plot_list[[4]] <- plot_data_list[[1]][[4]] # All tracts, log(Active and Vacant Residential) 
+export_plot_list[[1]] <- plot_data_list[[1]][[1]] # All tracts, Active and Vacant Residential 
+export_plot_list[[2]] <- plot_data_list[[1]][[2]] # All tracts, log(Active and Vacant Residential) 
+export_plot_list[[3]] <- plot_data_list[[1]][[3]] # All tracts, Active Residential
+export_plot_list[[4]] <- plot_data_list[[1]][[4]] # All tracts, log(Active Residential) 
 
-export_plot_list[[5]] <- plot_data_list[[2]][[1]] # Large Urban tracts, Active and Vacant 
-export_plot_list[[6]] <- plot_data_list[[2]][[2]] # Large Urban tracts, log(Active and Vacant) 
-export_plot_list[[7]] <- plot_data_list[[2]][[3]] # Large Urban tracts, Active and Vacant  Residential
-export_plot_list[[8]] <- plot_data_list[[2]][[4]] # Large Urban tracts, log(Active and Vacant Residential) 
+export_plot_list[[5]] <- plot_data_list[[2]][[1]] # Large Urban tracts, Active and Vacant Residential 
+export_plot_list[[6]] <- plot_data_list[[2]][[2]] # Large Urban tracts, log(Active and Vacant Residential) 
+export_plot_list[[7]] <- plot_data_list[[2]][[3]] # Large Urban tracts, Active Residential
+export_plot_list[[8]] <- plot_data_list[[2]][[4]] # Large Urban tracts, log(Active Residential) 
 
-export_plot_list[[9]] <- plot_data_list[[3]][[3]] # Mid-size Urban tracts, log(Active and Vacant Residential) 
-export_plot_list[[10]] <- plot_data_list[[4]][[3]] # rural tracts, log(Active and Vacant Residential) 
-export_plot_list[[11]] <- plot_data_list[[5]][[3]] # small town tracts, log(Active and Vacant Residential) 
-export_plot_list[[12]] <- plot_data_list[[6]][[3]] # small Urban tracts, log(Active and Vacant Residential) 
-export_plot_list[[13]] <- plot_data_list[[7]][[3]] # suburban tracts, log(Active and Vacant Residential) 
+export_plot_list[[9]] <- plot_data_list[[3]][[1]] # Mid-size Urban tracts, log(Active and Vacant Residential) 
+export_plot_list[[10]] <- plot_data_list[[4]][[1]] # rural tracts, log(Active and Vacant Residential) 
+export_plot_list[[11]] <- plot_data_list[[5]][[1]] # small town tracts, log(Active and Vacant Residential) 
+export_plot_list[[12]] <- plot_data_list[[6]][[1]] # small Urban tracts, log(Active and Vacant Residential) 
+export_plot_list[[13]] <- plot_data_list[[7]][[1]] # suburban tracts, log(Active and Vacant Residential) 
 
 
 
 sheet_names <- c(
-  "All, Act and Vac"
-  , "All, Log(Act and Vac)"
-  , "All, Act and Vac Res"
+  "All, Act and Vac Res"
   , "All, Log(Act and Vac Res)"
+  , "All, Act Res"
+  , "All, Log(Act Res)"
   
-  , "Large, Act and Vac"
-  , "Large, Log(Act and Vac)"
   , "Large, Act and Vac Res"
   , "Large, Log(Act and Vac Res)"
+  , "Large, Act Res"
+  , "Large, Log(Act Res)"
   
   , "Mid-size, Act and Vac Res"
   , "rural, Act and Vac Res"
