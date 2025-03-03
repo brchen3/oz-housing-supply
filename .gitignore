@@ -1,0 +1,11 @@
+*.csv
+*.xls
+*.xlsx
+*.txt
+*.dta
+*.ster
+*.RData
+*.Rapp.history
+*.Rhistory
+*.dbf
+*.zip
