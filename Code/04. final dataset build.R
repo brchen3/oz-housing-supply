@@ -52,7 +52,7 @@ path_data_tract <- file.path(path_data, "Tract Characteristics")
 path_data_crosswalks <- file.path(path_data, "HUD crosswalks")
 path_data_lodes <- file.path(path_data, "LODES") # Longitudinal Employer-Household Dynamics https://lehd.ces.census.gov/
 
-path_output <- file.path(path_project, "output")
+path_output <- file.path(path_project, "Output")
 
 
 #################
