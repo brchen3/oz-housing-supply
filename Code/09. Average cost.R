@@ -18,6 +18,7 @@ library(openxlsx)
 # Define user-specific project directories
 project_directories <- list(
   "name" = "PATH TO GITHUB REPO",
+  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply"
 )
 
 # Setting project path based on current user
@@ -41,12 +42,57 @@ did_results <- read.xlsx(file.path(path_output, "CSDID Effect Estimate.xlsx"))
 
 # Additional calculations based on the provided text
 avg_effect <- did_results %>% filter(Tract.Geography == "All") %>%
-  select(Active.and.Vacant.Residential)  # average new addresses per OZ tract
+  select(Active.and.Vacant.Residential) %>%
+  mutate(Active.and.Vacant.Residential = as.numeric(stringr::str_sub(end = 5,start = 1,string = Active.and.Vacant.Residential))) # average new addresses per OZ tract
+
 oz_tracts <- 8764           # total number of OZ tracts
   
 oz_new_estimated <- avg_effect * oz_tracts  # estimated new addresses due to OZs
 cost <- 8200000000
 cost_character <- "8.2 billion"
+
+####################################
+###         Top line stat        ###
+####################################
+
+setwd(path_data)
+load(file = "USPS_tract_vacancy_2012_2024_2020_definitions.RData") 
+
+USPS_data <- USPS_data %>%
+  filter(Sample == "In Clean Sample") 
+
+# Define the time period of interest
+target_months <- c("2014-09","2019-09", "2024-09")
+
+# Helper function to calculate residential address change for a given filter
+calculate_res_change <- function(data) {
+  data %>%
+    # Sum up all types of residential addresses into one column
+    mutate(Residential = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES) %>%
+    # Keep only rows for the target months
+    filter(YEAR_MONTH %in% target_months) %>%
+    # Group by month and calculate total residential addresses
+    group_by(YEAR_MONTH) %>%
+    summarise(TotalResidential = sum(Residential, na.rm = TRUE), .groups = 'drop') %>%
+    # Spread months into separate columns for easier comparison
+    pivot_wider(names_from = YEAR_MONTH, values_from = TotalResidential) %>%
+    # Calculate the change from 2019-09 to 2024-09
+    mutate(change = `2024-09` - `2019-09`,
+           pre_change = `2019-09` - `2014-09`)
+}
+
+# Calculate national residential change without any category filter
+national_res_change <- calculate_res_change(USPS_data)
+
+# Calculate change for LIC-eligible tracts
+LIC_res_change <- calculate_res_change(
+  subset(USPS_data,Designation_category %in% c("LIC not selected", "LIC selected"))
+)
+
+# Calculate change for designated OZs (assumed under "LIC selected")
+OZ_res_change <- calculate_res_change(  
+  subset(USPS_data,Designation_category %in% c("LIC selected"))
+)
 
 # Calculate percentages relative to different groups
 pct_of_OZ_total    <- round((oz_new_estimated / OZ_res_change$change) * 100, 2)
