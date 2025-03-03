@@ -1,9 +1,0 @@
-HUD Crosswalk Download instructions
-
-1. Set up an account with HUD if you have not already done so here: https://www.huduser.gov/apps/public/usps/login
-
-2. Navigate to the ‘HUD-USPS 2010-2020 Census Tract Crosswalk
-
-2. Download the following files:
-	a. CENSUS_TRACT_CROSSWALK_2010_to_2020_2020.xlsx
-	b. CENSUS_TRACT_CROSSWALK_2010_to_2020_2010.xlsx
