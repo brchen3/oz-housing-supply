@@ -49,9 +49,7 @@ load(file = "USPS_tract_vacancy_2012_2024_2020_definitions.RData") # master data
 # then drop it from the analysis - conservative first pass
 
 USPS_data <- USPS_data %>%
-  mutate(`Active address count` = ACTIVE_RESIDENTIAL_ADDRESSES + ACTIVE_BUSINESS_ADDRESSES + ACTIVE_OTHER_ADDRESSES) %>%
-  filter(Sample == "In Clean Sample") %>%
-  mutate(NO_STAT_ALL = NO_STAT_OTHER_ADDRESSES + NO_STAT_BUSINESS_ADDRESSES + NO_STAT_RESIDENTIAL_ADDRESSES)
+  filter(Sample == "In Clean Sample")
 
 #################
 ### What are the trends in vacancy (counts and share) across designated and undesignated but eligible tracts? 
@@ -137,4 +135,4 @@ share_designation %>%
   geom_line() + 
   facet_wrap(Designation_category ~ .,scales = "free_y" )
 
-write.xlsx(share_designation_wide, "Share of Addresses.xlsx")
+write.xlsx(share_designation_wide, file.path(path_output,"Share of Addresses.xlsx"))
