@@ -22,7 +22,7 @@ library(openxlsx)
 #################
 # Define user-specific project directories
 project_directories <- list(
-  "name" = "PATH TO GITHUB REPO",
+  "name" = "PATH TO GITHUB REPO"
 )
 
 # Setting project path based on current user
@@ -54,9 +54,7 @@ load(file = "USPS_tract_vacancy_2012_2024_2020_definitions.RData") # master data
 # then drop it from the analysis - conservative first pass
 
 USPS_data <- USPS_data %>%
-  mutate(`Active address count` = ACTIVE_RESIDENTIAL_ADDRESSES + ACTIVE_BUSINESS_ADDRESSES + ACTIVE_OTHER_ADDRESSES) %>%
-  filter(Sample == "In Clean Sample") %>%
-  mutate(NO_STAT_ALL = NO_STAT_OTHER_ADDRESSES + NO_STAT_BUSINESS_ADDRESSES + NO_STAT_RESIDENTIAL_ADDRESSES)
+  filter(Sample == "In Clean Sample") 
 
 #################
 ### What are the trends in vacancy (counts and share) across designated and undesignated but eligible tracts? 
@@ -93,9 +91,8 @@ address_counts <- table_df %>%
   summarise(
     `Median Active and Vacant Residential Address Count` = median(`Active and Vacant, Residential`, na.rm = TRUE),
     `Median Active Residential Address Count` = median(ACTIVE_RESIDENTIAL_ADDRESSES, na.rm = TRUE),
-    `Median Active Business Address Count` = median(ACTIVE_BUSINESS_ADDRESSES, na.rm = TRUE),
-    `Median No Status Address Count` = median(NO_STAT_ALL, na.rm = TRUE),
-    `Median Active Other Address Count` = median(ACTIVE_OTHER_ADDRESSES, na.rm = TRUE),
+    # `Median Active Business Address Count` = median(ACTIVE_BUSINESS_ADDRESSES, na.rm = TRUE),
+    # `Median Active Other Address Count` = median(ACTIVE_OTHER_ADDRESSES, na.rm = TRUE),
     
     `Median Poverty Rate` = round(median(poverty_rate, na.rm = TRUE),2),  
     `Median MFI` = round(median(median_income, na.rm = TRUE),2),  
@@ -150,9 +147,9 @@ final_table <- combined_long %>%
 desired_order <- c(
   "Median Active and Vacant Residential Address Count",
   "Median Active Residential Address Count",
-  "Median Active Business Address Count",
-  "Median Active Other Address Count",
-  "Median No Status Address Count",
+  # "Median Active Business Address Count",
+  # "Median Active Other Address Count",
+  # "Median No Status Address Count",
   "Median Tract Workers",
   "Median Non-resident Workers",
   "Median Resident Workers",
@@ -193,7 +190,7 @@ summarized <- USPS_data  %>%
   select(
     geoid,
     date,`Type tract`,
-    `Active address count`, `Active and Vacant, Residential`,
+     `Active and Vacant, Residential`,
     `OZ Designation`
   ) 
 
