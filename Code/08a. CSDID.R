@@ -27,7 +27,8 @@ library(openxlsx)
 #################
 # Define user-specific project directories
 project_directories <- list(
-  "name" = "PATH TO GITHUB REPO"
+  "name" = "PATH TO GITHUB REPO",
+  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply"
   )
 
 # Setting project path based on current user
@@ -42,7 +43,7 @@ path_data <- file.path(path_project, "data")
 path_data_USPS <- file.path(path_project, "data/2020 Standardized")
 path_data_tract <- file.path(path_data, "Tract Characteristics")
 
-path_output <- file.path(path_project, "output")
+path_output <- file.path(path_project, "Output")
 
 #################
 ### Data load ###
@@ -56,12 +57,7 @@ load(file = "USPS_tract_vacancy_2012_2024_2020_definitions.RData")
 
 USPS_data <- USPS_data %>%
   filter(`Designation_category` %in% c("LIC selected","LIC not selected")) %>%
-  filter(Sample == "In Clean Sample") %>%
-  # filter(`Designation_category_detailed` != "LIC not selected, border tract") %>%
-  mutate(NO_STAT_ALL = NO_STAT_OTHER_ADDRESSES + NO_STAT_BUSINESS_ADDRESSES + NO_STAT_RESIDENTIAL_ADDRESSES)
-
-
-# table(USPS_data$date)
+  filter(Sample == "In Clean Sample") 
 
 #################
 ### What are the trends in vacancy (counts and share) across designated and undesignated but eligible tracts? 
@@ -105,15 +101,17 @@ USPS_data <- USPS_data %>%
   mutate(
     log_total_active_vacant_exclude_nostat = log(Total_active_vacant_exclude_nostat),
     log_res_address = log(Total_active_vacant_exclude_nostat_RESIDENTIAL),
+    log_res_active_address = log(ACTIVE_RESIDENTIAL_ADDRESSES),
     log_bus_address = log(Total_active_vacant_exclude_nostat_BUSINESS),
     log_other_address = log(Total_active_vacant_exclude_nostat_OTHER)
   ) %>%
   mutate(
     log_total_active_vacant_exclude_nostat = if_else(log_total_active_vacant_exclude_nostat<0,NA,log_total_active_vacant_exclude_nostat),
     log_res_address = if_else(log_res_address<0,NA,log_res_address),
+    log_res_active_address = if_else(log_res_active_address<0,NA,log_res_active_address),
     log_bus_address = if_else(log_bus_address<0,NA,log_bus_address),
     log_other_address = if_else(log_other_address<0,NA,log_other_address)
-    )
+  )
 
 # Count the number of quarters covered by the data set for each tract
 USPS_data <- USPS_data %>%
@@ -126,11 +124,7 @@ max_quarters <- max(USPS_data$number_of_quarters)
 
 # Filter out tracts with missing quarters
 USPS_data <- USPS_data %>%
-  filter(number_of_quarters == max_quarters) %>%
-  mutate( NO_STAT_ALL = case_when(
-    date == "2017-09-01" ~ NA,
-    TRUE ~ NO_STAT_ALL
-  ))
+  filter(number_of_quarters == max_quarters) 
 
 #######################
 ### Build DID Model ###
@@ -147,54 +141,25 @@ dates <- sort(unique(USPS_data$date))[2:length(sort(unique(USPS_data$date)))]
 plots <- list()
 plot_list <- list()
 
-# List the column names of the dependent variables
 outcome_vars[[1]] <- c(
-  "Total_active_vacant_exclude_nostat"
-  , "log_total_active_vacant_exclude_nostat"
-  
-  , "Total_active_vacant_exclude_nostat_RESIDENTIAL"
+  "Total_active_vacant_exclude_nostat_RESIDENTIAL"
   , "log_res_address"
-  
-  , "Total_active_vacant_exclude_nostat_BUSINESS"
-  , "log_bus_address"
-  
-  , "Total_active_vacant_exclude_nostat_OTHER"
-  , "log_other_address"
-  
   , "ACTIVE_RESIDENTIAL_ADDRESSES"
+  , "log_res_active_address"
 )
 
-# Generate dependent variable table titles
 titles <- c(
-  "Effect on All Active and Vacant"
-  , "Effect on Log(All Active and Vacant)"
-  
-  , "Effect on  Active and Vacant Residential"
+  "Effect on  Active and Vacant Residential"
+  , "Effect on Log(Active and Vacant Residential)"
+  , "Effect on Active Residential"
   , "Effect on Log(Active Residential)"
-
-  , "Effect on  Active and Vacant Business"
-  , "Effect on Log( Active and Vacant Business)"
-
-  , "Effect on  Active and Vacant Other"
-  , "Effect on Log( Active and Vacant Other)"
-  
-  , "ACTIVE_RESIDENTIAL_ADDRESSES"
 )
 
 table_titles <- c(
-  "All Active and Vacant"
-  , "Log(All Active and Vacant)"
-  
-  , "Active and Vacant Residential"
+  "Active and Vacant Residential"
   , "Log(Active and Vacant Residential)"
-
-  , "Active and Vacant Business"
-  , "Log(Active and Vacant Business)"
-
-  , "Active and Vacant Other"
-  , "Log(Active and Vacant Other)"
-  
-  , "ACTIVE_RESIDENTIAL_ADDRESSES"
+  , "Active Residential"
+  , "Log(Active Residential)"
 )
 
 titles_df <- as.data.frame(cbind(table_titles, outcome_vars[[1]]))
