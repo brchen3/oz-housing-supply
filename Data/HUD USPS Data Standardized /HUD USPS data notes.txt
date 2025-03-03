@@ -1,9 +1,0 @@
-Notes on HUD USPS Data
-
-The USPS counts of addresses data are provided by Alexander Dun at the US Department of Housing and Urban Development, and is not authorized for 
-public release.
-
-You may access a public facing version of this data by signing up for
-an account through HUD here: https://www.huduser.gov/portal/home.html
-
-Keep in mind that the use of this public facing data will impact the generated results.
