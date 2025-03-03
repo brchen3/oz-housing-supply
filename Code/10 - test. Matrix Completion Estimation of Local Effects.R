@@ -196,7 +196,7 @@ for (i in seq_len(n_treated)) {
     filter(id == current_treated_id | id %in% control_ids)
   
   # Run matrix completion estimation (using method = "mc")
-  out_temp <- run_and_plot(method = "fe", selected_data = temp_data)
+  out_temp <- run_and_plot(method = "mc", selected_data = temp_data)
   
   # Extract effect estimates for the treated unit
   Effect <- out_temp[["eff"]]
