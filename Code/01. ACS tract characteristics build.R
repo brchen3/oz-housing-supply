@@ -43,7 +43,7 @@ path_data_tract <- file.path(path_data, "Tract Characteristics")
 
 # Set Census API key
 # Replace 'YOUR_CENSUS_API_KEY' with your actual Census API key
-census_api_key("YOUR_CENSUS_API_KEY", install = TRUE, overwrite = TRUE)
+# census_api_key("YOUR_CENSUS_API_KEY", install = TRUE, overwrite = TRUE)
 
 # Reload environment to use the key
 readRenviron("~/.Renviron")
