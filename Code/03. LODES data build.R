@@ -23,7 +23,7 @@ library(openxlsx)
 library(R.utils)
 
 project_directories <- list(
-  "name" = "PATH TO GITHUB REPO",
+  "name" = "PATH TO GITHUB REPO"
 )
 
 # Setting project path based on current user
