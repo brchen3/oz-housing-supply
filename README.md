@@ -2,7 +2,7 @@
 
 This repository includes methods and documents to support the paper <em>The Impact of Opportunity Zones on Housing Supply</em>, published [MONTH],[DAY],2025.
 
-Contact Ben Glasner (benjamin@eig.org) or Adam Ozimek (adam@eig.org) with any questions.
+Contact Ben Glasner (benjamin@eig.org) with any questions.
 
 ***
 <h2>Abstract</h2>
