@@ -5,16 +5,22 @@ This repository includes methods and documents to support the paper <em>The Impa
 Contact Ben Glasner (benjamin@eig.org) or Adam Ozimek (adam@eig.org) with any questions.
 
 ***
+<h2>Abstract</h2>
+The United States suffers from a large and persistent shortfall in housing supply. While housing regulations are primarily decided at the local level, the federal government has for many years attempted to boost supply and affordability through a variety of policy interventions. Opportunity Zones (OZs) are one among many such policies, but only recently has enough time passed since implementation that their impact can be observed on an important indicator of local revitalization: growth in local housing stock. We measure this effect using net residential address growth from the United States Department of Housing and Urban Development’s Aggregated United States Postal Service Administrative Data on Address Vacancies. The results offer insight into the effectiveness of a novel capital gains tax incentive to drive investment activity to areas with significantly higher economic need than the typical U.S. community. Using modern difference-in-differences methods, we find that OZs roughly doubled the total amount of new housing added to low-income communities from Q3 2019 to Q3 2024, at a fiscal cost of about $26,000 per new residential address. Our findings show that the causal effect of OZs on housing supply is positive, substantial, and has continued to grow through the end of 2024. The results furthermore show that these effects are geographically widespread and cost-efficient.
+
+***
 
 <h2>Data</h2>
 
 <h3>Administrative Data on Address Vacancies</h3>
 
-United States Department of Housing and Urban Development’s (HUD) Aggregated United States Postal Service (USPS) Administrative Data on Address Vacancies is the primary dataset for analysis and is used to measure net address growth. This data is collected by USPS postal workers to facilitate mail delivery, and provides quarterly counts of addresses serviced by USPS. These addresses are categorized by residential, business, and other. An address is considered vacant if delivery staff on urban routes have identified that mail has not been collected for 90 days or longer. Some addresses are consitered to be "no-stat" (neither occupied nor non-occupied) for many reasons, including (1) being on a rural route that has been vacant for 90 days or longer, (2) the address is for a structure under construction and is not yet occupied, (3) identified by a carrier as not likely to be active for some time.
+United States Department of Housing and Urban Development’s (HUD) Aggregated United States Postal Service (USPS) Administrative Data on Address Vacancies is the primary dataset for analysis and is used to measure net address growth. This data is collected by USPS postal workers to facilitate mail delivery, and provides quarterly counts of addresses serviced by USPS. These addresses are categorized as one of three types: residential, business, and other. An address within these three types can be coded as active, vacant, or no-stat. The address is considered vacant if delivery staff on urban routes have identified that mail has not been collected for 90 days or longer. Some addresses are consitered to be "no-stat" (neither occupied nor non-occupied) for many reasons, including (1) being on a rural route that has been vacant for 90 days or longer, (2) the address is for a structure under construction and is not yet occupied, (3) identified by a carrier as not likely to be active for some time.
+
+This analysis is built on active and vacant residential addresses.
 
 <h3>Eligible and Designated OZ Tracts</h3>
 
-Tracts were categorized as being OZ eligible using 2010 census tract boundary definitions. To  make these compatible, we walk 2010 definitions forward to 2020 definitions using HUD's crosswalk system. We only include tracts whose treatment status remained the same using 2020 boundaries. This means that a tract's area had a single OZ designation status through the boundary change. Eligibilty categories include Low Income Community (LIC) tracts, Contiguous tracts, and ineligible tracts.
+Tracts were categorized as being OZ eligible using 2010 census tract boundary definitions. Our data is defined using 2020 census tract boundaries. To make these compatible, we walk 2010 definitions forward to 2020 definitions using HUD's crosswalk system. We only include tracts whose treatment status remained the same using 2020 boundaries. This means that a tract's area had a single OZ designation status through the boundary change. Eligibilty categories include Low Income Community (LIC) tracts, Contiguous tracts, and ineligible tracts.
 
 <h3>Socioeconomic outcomes from the ACS</h3>
 
@@ -63,6 +69,11 @@ Crosswalks are from HUD and from [MCDC](https://mcdc.missouri.edu/applications/g
 
 <h2>Methodology</h2>
 
-We utilize the doubly-robust difference-in-differences estimator from Callaway and Sant’Anna (2021) (CSDID). The sample for the CSDID estimates is all Low Income Community (LIC) tracts that were eligible to be designated as OZs. Those that were designated OZs are the treated group, and those that were not designated are the control group. We exclude contiguous and ineligible tracts.
+Due to the geographic variation in OZ designation, the simultaneous designation of tracts and finalization of regulations, and the characteristic-dependent selection of eligibility, we favor a difference-in-differences approach that is flexible enough to incorporate conditional parallel trends and produce dynamic effect estimates over the observed post-treatment period. 
+
+In particular, we use the doubly-robust difference-in-differences estimator from Callaway and Sant’Anna (2021) (CSDID). The sample for the CSDID estimates is all low-income community (LIC) tracts that were eligible to be designated as OZs. Those that were designated OZs are the treated group, and those that were not designated are the control group. We exclude contiguous and ineligible tracts from the analysis at this stage. To help ensure against a violation of the parallel trends assumption, we construct conditional parallel trends using a tracts' poverty rate, median household income, unemployment rate, and share of the population who are of prime age (25 to 54) in 2016, before OZs were enacted.
+
+When considering the effect estimate on residential address counts at the tract level, it is important to note the relationship between treatment and our outcomes of interest. OZs are being utilized first and foremost to increase local construction. The construction of new buildings takes time, often with long lags between planning and due diligence, purchase, land development and permitting, construction, sale, and finally, occupancy. This implies a lag between treatment assignment and changes in the count of residential addresses. As such, an average treatment effect over the entire post-treatment period will likely underestimate the true effect of the policy. In fact, the latest available data in the post-period will show the most accurate picture of the effect of OZs up to this point. In our case, we report effect estimates in the third quarter of 2024.
+
 
 
