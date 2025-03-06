@@ -18,6 +18,8 @@ United States Department of Housing and Urban Development’s (HUD) Aggregated U
 
 This analysis is built on active and vacant residential addresses.
 
+Due to issues with the data available online, the analysis uses the 2020 standardized file received directly from HUD. Contact [Alexander Din]([https://mcdc.missouri.edu/applications/geocorr2022.html](https://www.alexdin.com/)) at Alexander.M.Din@hud.gov for questions related to this file.  
+
 <h3>Eligible and Designated OZ Tracts</h3>
 
 Tracts were categorized as being OZ eligible using 2010 census tract boundary definitions. Our data is defined using 2020 census tract boundaries. To make these compatible, we walk 2010 definitions forward to 2020 definitions using HUD's crosswalk system. We only include tracts whose treatment status remained the same using 2020 boundaries. This means that a tract's area had a single OZ designation status through the boundary change. Eligibilty categories include Low Income Community (LIC) tracts, Contiguous tracts, and ineligible tracts.
