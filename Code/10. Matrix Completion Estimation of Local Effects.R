@@ -127,8 +127,8 @@ run_and_plot <- function(method, selected_data) {
     cv.donut = 0,
     criterion = "mspe",
     method = method,
-    se = TRUE,
-    # se = FALSE,
+    # se = TRUE,
+    se = FALSE,
     vartype = "jackknife",
     quantile.CI = FALSE,
     nboots = 50,
@@ -222,7 +222,8 @@ for (i in seq_len(n_treated)) {
     na.omit()
   
   # Run matrix completion estimation (using method = "mc")
-  model_output[[i]] <- run_and_plot(method = "mc", selected_data = temp_data)
+  # model_output[[i]] <- run_and_plot(method = "mc", selected_data = temp_data)
+  model_output[[i]] <- run_and_plot(method = "fe", selected_data = temp_data)
   
   # Extract effect estimates for the treated unit
   Effect <- model_output[[i]][["eff"]]
@@ -233,28 +234,29 @@ for (i in seq_len(n_treated)) {
   Effect <- cbind(id = rownames(Effect), Effect)
   
   # Reshape into long format and compute confidence bounds
+  # effect_long <- Effect %>%
+  #   pivot_longer(
+  #     cols = starts_with("Period:"),
+  #     names_to = "Period",
+  #     values_to = "Effect on Total Addresses"
+  #   ) %>%
+  #   mutate(`Average S.E.` = model_output[[i]][["est.avg"]][[2]],
+  #          Upper = `Effect on Total Addresses` + `Average S.E.` * 1.96,
+  #          Lower = `Effect on Total Addresses` - `Average S.E.` * 1.96,
+  #          Significant = case_when(
+  #            (Lower > 0 & Upper > 0) | (Lower < 0 & Upper < 0) ~ 1,
+  #            (pmin(Lower, Upper) <= 0 & pmax(Lower, Upper) >= 0) ~ 0,
+  #            TRUE ~ NA_real_
+  #          )) %>%
+  #   filter(id == current_treated_id) 
+  
   effect_long <- Effect %>%
     pivot_longer(
       cols = starts_with("Period:"),
       names_to = "Period",
       values_to = "Effect on Total Addresses"
     ) %>%
-    mutate(`Average S.E.` = model_output[[i]][["est.avg"]][[2]],
-           Upper = `Effect on Total Addresses` + `Average S.E.` * 1.96,
-           Lower = `Effect on Total Addresses` - `Average S.E.` * 1.96,
-           Significant = case_when(
-             (Lower > 0 & Upper > 0) | (Lower < 0 & Upper < 0) ~ 1,
-             (pmin(Lower, Upper) <= 0 & pmax(Lower, Upper) >= 0) ~ 0,
-             TRUE ~ NA_real_
-           )) %>%
-    filter(id == current_treated_id) 
-  
-  # effect_long <- Effect %>%
-  #   pivot_longer(
-  #     cols = starts_with("Period:"),
-  #     names_to = "Period",
-  #     values_to = "Effect on Total Addresses"
-  #   ) 
+  filter(id == current_treated_id)
   
   estimate_list[[i]] <- effect_long
   
@@ -274,15 +276,38 @@ All_estimates <- bind_rows(estimate_list)
 
 # Save the effect estimates and estimation outputs as needed
 setwd(path_output)
-save(All_estimates, file = "MC_FECT_Effect_Estimates_and_SE.RData")
-save(model_output, file = "MC FECT Estiamted Models.RData")
+# save(All_estimates, file = "MC_FECT_Effect_Estimates_and_SE.RData")
+# save(model_output, file = "MC FECT Estiamted Models.RData")
 # Optionally, you might want to also save the individual model outputs if needed.
 
 # You can now proceed with plotting or additional analysis on All_estimates
 # For example, plotting the average effect for a given period:
+
+# max_period <- USPS_data %>%
+#   filter(time == max(time)) %>%
+#   select(Period) %>%
+#   distinct() %>%
+#   pull(Period)
+
 current_estimate <- All_estimates %>%
-  filter(Period == "Period: 10") %>%
+  mutate(Period_num = stringr::str_sub(Period ,-2, -1)) %>% 
+  filter(Period_num == max(Period_num)) %>%
   summarize(Average_Effect = mean(`Effect on Total Addresses`, na.rm = TRUE)) %>%
   pull(Average_Effect)
 
 print(paste("Average Effect on Total Addresses in Period 10:", round(current_estimate, 4)))
+
+
+All_estimates %>%
+  mutate(Period_num = stringr::str_sub(Period ,-2, -1)) %>% 
+  # filter(Period_num == max(Period_num)) %>%
+  group_by(Period_num) %>%
+  summarize(Average_Effect = mean(`Effect on Total Addresses`, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot(aes(x = as.numeric(Period_num), 
+             y = Average_Effect)) + 
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 16.5) +
+  geom_line() + 
+  geom_point() + 
+  theme_bw()
