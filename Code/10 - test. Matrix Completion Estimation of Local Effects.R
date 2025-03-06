@@ -36,7 +36,8 @@ library(progress)
 # Define user-specific project directories
 project_directories <- list(
   "name" = "PATH TO GITHUB REPO",
-  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply"
+  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
+  "bngla" = "C:/Users/bngla/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply"
 )
 
 # Setting project path based on current user
@@ -65,16 +66,12 @@ load(file = "USPS_tract_vacancy_2012_2024_2020_definitions.RData")
 USPS_data <- USPS_data %>%
   filter(`Designation_category` %in% c("LIC selected","LIC not selected")) %>%
   filter(Sample == "In Clean Sample") %>%
-  filter(YEAR >= 2014) %>%
-  filter(YEAR < 2024) %>%
-  filter(MONTH == "09") %>% 
+  filter(YEAR %in% c(2016,2017,2018,2019) | date == "2023-12-01") %>%
   mutate(
     id = as.numeric(geoid), 
     time = dense_rank(date),
     Designation = if_else(`OZ Designation` == 1 & date >= "2020-03-01", 1, 0),
-    Total_active = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES +
-      ACTIVE_BUSINESS_ADDRESSES + STV_BUSINESS_ADDRESSES + LTV_BUSINESS_ADDRESSES +
-      ACTIVE_OTHER_ADDRESSES + STV_OTHER_ADDRESSES + LTV_OTHER_ADDRESSES, 
+    Total_active = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES, 
     log_Total_active = log(Total_active),
     `current median income decile` = ntile(median_income, 10),
     `current poverty rate decile` = ntile(poverty_rate, 10),
@@ -106,8 +103,8 @@ USPS_data <- USPS_data %>% filter(number_of_quarters_obs == max_quarter)
 outcome_var   <- "Total_active"
 treatment_var <- "Designation"
 # Uncomment the next line if you wish to include controls
-# controls      <- c("current median income decile", "current poverty rate decile", "current solo detached decile")
-# control_vars  <- paste(controls, collapse = " + ")
+controls      <- c("`current median income decile`", "`current poverty rate decile`")
+control_vars  <- paste(controls, collapse = " + ")
 current_formula <- as.formula(paste(outcome_var, "~", treatment_var))
 # current_formula <- as.formula(paste(outcome_var, "~", treatment_var, "+", control_vars))
 
@@ -131,11 +128,13 @@ run_and_plot <- function(method, selected_data) {
     criterion = "mspe",
     method = method,
     se = TRUE,
+    # se = FALSE,
+    vartype = "jackknife",
     quantile.CI = FALSE,
-    nboots = 100,
+    nboots = 50,
     alpha = 0.05,
     parallel = TRUE,
-    cores = 6,
+    cores = 12,
     max.iteration = 1000,
     seed = 42,
     min.T0 = 5,
@@ -143,7 +142,7 @@ run_and_plot <- function(method, selected_data) {
     proportion = 0.3,
     f.threshold = 0.5,
     degree = 2,
-    sfe = c("type_tract"),
+    sfe = c("state_fips"),
     cfe = list(c("type_tract", "time"), c("state_fips", "time")),
     fill.missing = FALSE,
     placeboTest = FALSE,
@@ -151,7 +150,7 @@ run_and_plot <- function(method, selected_data) {
     loo = FALSE,
     permute = FALSE,
     m = 2,
-    normalize = TRUE
+    normalize = FALSE
   )
   
   out <- do.call(fect, args)
@@ -167,14 +166,15 @@ treated_units <- USPS_data %>%
   filter(Designation_category == "LIC selected") %>%
   distinct(id)
 
-# Get full set of control unit IDs (all "LIC not selected")
-control_ids <- USPS_data %>%
-  filter(Designation_category == "LIC not selected") %>%
-  distinct(id) %>%
-  pull(id)
+# # Get full set of control unit IDs (all "LIC not selected")
+# control_ids <- USPS_data %>%
+#   filter(Designation_category == "LIC not selected") %>%
+#   distinct(id) %>%
+#   pull(id)
 
 # Initialize list to store effect estimates
 estimate_list <- list()
+model_output <- list()
 
 # Set up progress bar over treated units
 n_treated <- nrow(treated_units)
@@ -191,20 +191,46 @@ pb <- progress_bar$new(
 for (i in seq_len(n_treated)) {
   current_treated_id <- treated_units$id[i]
   
+  # Get the decile value for the current treated unit
+  housing_date_decile <- USPS_data %>%
+    filter(id == current_treated_id & date == "2016-09-01") %>%
+    pull(`current solo detached decile`)
+  
+  poverty__date_decile <- USPS_data %>%
+    filter(id == current_treated_id & date == "2016-09-01") %>%
+    pull(`current poverty rate decile`)
+  
+  income__date_decile <- USPS_data %>%
+    filter(id == current_treated_id & date == "2016-09-01") %>%
+    pull(`current median income decile`)
+  
+  # Get full set of control unit IDs (all "LIC not selected")
+  control_ids <- USPS_data %>%
+    filter(date == "2016-09-01") %>%
+    filter(Designation_category == "LIC not selected") %>%
+    # filter(`current solo detached decile` == treated__date_decile) %>%
+    filter(abs(`current solo detached decile` - housing_date_decile) <= 1) %>%
+    filter(abs(`current poverty rate decile` - poverty__date_decile) <= 1) %>%
+    filter(abs(`current median income decile` - income__date_decile) <= 1) %>%
+    distinct(id) %>%
+    pull(id)
+  
   # Create temporary dataset: current treated unit + full control pool
   temp_data <- USPS_data %>%
-    filter(id == current_treated_id | id %in% control_ids)
+    filter(id == current_treated_id | id %in% control_ids) %>%
+    select(all_of(outcome_var), all_of(treatment_var), "id", "time" ) %>%
+    na.omit()
   
   # Run matrix completion estimation (using method = "mc")
-  out_temp <- run_and_plot(method = "mc", selected_data = temp_data)
+  model_output[[i]] <- run_and_plot(method = "mc", selected_data = temp_data)
   
   # Extract effect estimates for the treated unit
-  Effect <- out_temp[["eff"]]
+  Effect <- model_output[[i]][["eff"]]
   # Transpose and convert to data frame
   Effect <- t(Effect)
   Effect <- as.data.frame(Effect)
   colnames(Effect) <- paste("Period:", seq_len(ncol(Effect)))
-  Effect <- cbind(id = current_treated_id, Effect)
+  Effect <- cbind(id = rownames(Effect), Effect)
   
   # Reshape into long format and compute confidence bounds
   effect_long <- Effect %>%
@@ -213,14 +239,22 @@ for (i in seq_len(n_treated)) {
       names_to = "Period",
       values_to = "Effect on Total Addresses"
     ) %>%
-    mutate(`Average S.E.` = out_temp[["est.avg"]][[2]],
+    mutate(`Average S.E.` = model_output[[i]][["est.avg"]][[2]],
            Upper = `Effect on Total Addresses` + `Average S.E.` * 1.96,
            Lower = `Effect on Total Addresses` - `Average S.E.` * 1.96,
            Significant = case_when(
              (Lower > 0 & Upper > 0) | (Lower < 0 & Upper < 0) ~ 1,
              (pmin(Lower, Upper) <= 0 & pmax(Lower, Upper) >= 0) ~ 0,
              TRUE ~ NA_real_
-           ))
+           )) %>%
+    filter(id == current_treated_id) 
+  
+  # effect_long <- Effect %>%
+  #   pivot_longer(
+  #     cols = starts_with("Period:"),
+  #     names_to = "Period",
+  #     values_to = "Effect on Total Addresses"
+  #   ) 
   
   estimate_list[[i]] <- effect_long
   
@@ -241,6 +275,7 @@ All_estimates <- bind_rows(estimate_list)
 # Save the effect estimates and estimation outputs as needed
 setwd(path_output)
 save(All_estimates, file = "MC_FECT_Effect_Estimates_and_SE.RData")
+save(model_output, file = "MC FECT Estiamted Models.RData")
 # Optionally, you might want to also save the individual model outputs if needed.
 
 # You can now proceed with plotting or additional analysis on All_estimates
