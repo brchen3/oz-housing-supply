@@ -77,9 +77,7 @@ USPS_data <- USPS_data %>%
     time = dense_rank(date),
     Designation = if_else(`OZ Designation` == 1 & date>="2020-03-01", 1, 0),
     Total_active = 
-      ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES +
-      ACTIVE_BUSINESS_ADDRESSES + STV_BUSINESS_ADDRESSES + LTV_BUSINESS_ADDRESSES +
-      ACTIVE_OTHER_ADDRESSES + STV_OTHER_ADDRESSES + LTV_OTHER_ADDRESSES, 
+      ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES, 
     log_Total_active = log(Total_active),
     `current median income decile` = ntile(median_income, 10),
     `current poverty rate decile` = ntile(poverty_rate, 10),
@@ -365,8 +363,8 @@ gc()
 All_estimates <- bind_rows(estimate_list) 
 
 setwd(path_output)
-save(out.output, file = "FE FECT Estiamted Models.RData")
-save(All_estimates, file = "FE FECT Effect Estimates and SE.RData")
+# save(out.output, file = "FE FECT Estiamted Models.RData")
+# save(All_estimates, file = "FE FECT Effect Estimates and SE.RData")
 # load(file = "FE FECT Estiamted Models.RData")
 # load(file = "FE FECT Effect Estimates and SE.RData")
 
@@ -375,8 +373,8 @@ save(All_estimates, file = "FE FECT Effect Estimates and SE.RData")
 # load(file = "IFE FECT Estiamted Models.RData")
 # load(file = "IFE FECT Effect Estimates and SE.RData")
 
-# save(out.output, file = "MC FECT Estiamted Models.RData")
-# save(All_estimates, file = "MC FECT FECT Effect Estimates and SE.RData")
+save(out.output, file = "MC FECT Estiamted Models.RData")
+save(All_estimates, file = "MC FECT FECT Effect Estimates and SE.RData")
 # load(file = "MC FECT Estiamted Models.RData")
 # load(file = "MC FECT Effect Estimates and SE.RData")
 
@@ -527,6 +525,10 @@ All_estimates %>%
                      labels = Dates_list) +
   theme_bw()
 
+All_estimates %>%
+  filter(Significant == 1) %>%
+  group_by(Period) %>%
+  summarise(`Effect on Total Addresses` = sum(`Effect on Total Addresses`))
     
 Final_estimates <- All_estimates %>%
   filter(Period == "Period: 10") %>%
@@ -536,6 +538,14 @@ Final_estimates <- All_estimates %>%
   na.omit() %>%
   left_join(Deciles) %>%
   left_join(poverty_medincome_pretreatment)
+
+
+Final_estimates %>%
+  filter(Significant == 1) %>%
+  summarise(`Average Effect by Tract` = mean(`Effect on Total Addresses`),
+            `Effect on Total Addresses` = sum(`Effect on Total Addresses`))
+  
+
 
 Final_estimates %>%
   filter(Significant == 1) %>%
@@ -684,3 +694,4 @@ P <- Final_estimates %>%
 png(filename = "Distribution of the Effect on Total Addresses by Poverty Rate.png",height = 600, width = 1000)
 plot(P)
 dev.off()
+
