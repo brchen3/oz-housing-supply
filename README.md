@@ -18,7 +18,7 @@ United States Department of Housing and Urban Development’s (HUD) Aggregated U
 
 This analysis is built on active and vacant residential addresses.
 
-Due to issues with the data available online, the analysis uses the 2020 standardized file received directly from HUD. Contact [Alexander Din]([https://mcdc.missouri.edu/applications/geocorr2022.html](https://www.alexdin.com/)) at Alexander.M.Din@hud.gov for questions related to this file.  
+Due to issues with the data available online, the analysis uses the 2020 standardized file received directly from HUD. Contact [Alexander Din](https://www.alexdin.com/) at Alexander.M.Din@hud.gov for questions related to this file.  
 
 <h3>Eligible and Designated OZ Tracts</h3>
 
