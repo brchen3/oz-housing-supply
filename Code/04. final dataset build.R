@@ -35,8 +35,10 @@ library(stringr)
 #################
 # Define user-specific project directories
 project_directories <- list(
-  "name" = "PATH TO GITHUB REPO"
-  )
+  "name" = "PATH TO GITHUB REPO",
+  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
+  "bngla" = "C:/Users/bngla/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply"
+)
 
 # Setting project path based on current user
 current_user <- Sys.info()[["user"]]
@@ -307,6 +309,10 @@ USPS_data %>%
   summarise(count = n()) %>%
   ungroup() 
 
+sort(unique((USPS_data$date)))
+
+USPS_data <- USPS_data %>%
+  filter(YEAR>2011)
 
 ########
 # Export
