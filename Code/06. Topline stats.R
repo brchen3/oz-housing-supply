@@ -18,6 +18,8 @@ library(openxlsx)
 # Define user-specific project directories
 project_directories <- list(
   "name" = "PATH TO GITHUB REPO",
+  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
+  "bngla" = "C:/Users/bngla/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply"
 )
 
 # Setting project path based on current user
@@ -69,7 +71,7 @@ USPS_data <- USPS_data %>%
 ###         Top line stat        ###
 ####################################
 # Define the time period of interest
-target_months <- c("2014-09","2019-09", "2024-09")
+target_months <- c("2014-12","2019-12", "2024-12")
 
 # Helper function to calculate residential address change for a given filter
 calculate_res_change <- function(data) {
@@ -83,9 +85,9 @@ calculate_res_change <- function(data) {
     summarise(TotalResidential = sum(Residential, na.rm = TRUE), .groups = 'drop') %>%
     # Spread months into separate columns for easier comparison
     pivot_wider(names_from = YEAR_MONTH, values_from = TotalResidential) %>%
-    # Calculate the change from 2019-09 to 2024-09
-    mutate(change = `2024-09` - `2019-09`,
-           pre_change = `2019-09` - `2014-09`)
+    # Calculate the change from 2019-12 to 2024-12
+    mutate(change = `2024-12` - `2019-12`,
+           pre_change = `2019-12` - `2014-12`)
 }
 
 # Calculate national residential change without any category filter
@@ -104,7 +106,7 @@ OZ_res_change <- calculate_res_change(
 # Compose a summary statement comparing OZ growth relative to LIC and national changes
 summary_statement <- paste0(
   "OZ's added a total of ", prettyNum(OZ_res_change$change, big.mark = ","), 
-  " new active and vacant residential addresses from Q3 2019 to Q3 2024. ",
+  " new active and vacant residential addresses from Q4 2019 to Q4 2024. ",
   "This accounted for ", round(OZ_res_change$change / LIC_res_change$change, 3) * 100,
   "% of all new active and vacant addresses among all LIC eligible tracts regardless of OZ designation, which added ",
   prettyNum(LIC_res_change$change, big.mark = ","), 
@@ -112,7 +114,7 @@ summary_statement <- paste0(
   round(OZ_res_change$change / national_res_change$change, 3) * 100,
   "% of the ", prettyNum(national_res_change$change, big.mark = ","), 
   " new active and vacant residential addresses across the full analysis sample.",
-  " From Q3 of 2014 to Q3 of 2019, OZ's accounted for ", 
+  " From Q4 of 2014 to Q4 of 2019, OZ's accounted for ", 
   round(OZ_res_change$pre_change / national_res_change$pre_change, 3) * 100,
   "% of the ", prettyNum(national_res_change$pre_change, big.mark = ","), 
   " new active and vacant residential addresses across the full analysis sample."
@@ -125,7 +127,7 @@ print(summary_statement)
 # If you compare designated OZs to overall tracts, did OZs have a stronger pre-trend of address growth?
 # Aggregate annual address count changes
 Count_add  <- USPS_data %>%
-  filter(YEAR_MONTH %in% c("2014-09","2015-09","2016-09","2017-09","2018-09","2019-09","2020-09","2021-09","2022-09","2023-09","2024-09"))  %>% 
+  filter(YEAR_MONTH %in% c("2014-12","2015-12","2016-12","2017-12","2018-12","2019-12","2020-12","2021-12","2022-12","2023-12","2024-12"))  %>% 
   mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
          `OZ designation` = case_when(
            Designation_category %in% c("LIC selected","Contiguous selected") ~ "OZ tracts",
@@ -142,7 +144,7 @@ Count_add  <- USPS_data %>%
 
 # Calculate annual growth in address counts
 growth  <- USPS_data %>%
-  filter(YEAR_MONTH %in% c("2014-09","2015-09","2016-09","2017-09","2018-09","2019-09","2020-09","2021-09","2022-09","2023-09","2024-09"))  %>% 
+  filter(YEAR_MONTH %in% c("2014-12","2015-12","2016-12","2017-12","2018-12","2019-12","2020-12","2021-12","2022-12","2023-12","2024-12"))  %>% 
   mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
          `OZ designation` = case_when(
            Designation_category %in% c("LIC selected","Contiguous selected") ~ "OZ tracts",
@@ -175,7 +177,7 @@ write.xlsx(growth, file = "Total Address Growth Rate.xlsx")
 ########################
 # Simplified version
 Count_add_simple  <- USPS_data %>%
-  filter(YEAR_MONTH %in% c("2014-09","2015-09","2016-09","2017-09","2018-09","2019-09","2020-09","2021-09","2022-09","2023-09","2024-09"))  %>% 
+  filter(YEAR_MONTH %in% c("2014-12","2015-12","2016-12","2017-12","2018-12","2019-12","2020-12","2021-12","2022-12","2023-12","2024-12"))  %>% 
   mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
          `OZ designation` = case_when(
            Designation_category %in% c("LIC selected","Contiguous selected") ~ "OZ tracts",
@@ -191,7 +193,7 @@ Count_add_simple  <- USPS_data %>%
   rename(`Time Period` = YEAR_MONTH)
 
 growth_simple  <- USPS_data %>%
-  filter(YEAR_MONTH %in% c("2014-09","2015-09","2016-09","2017-09","2018-09","2019-09","2020-09","2021-09","2022-09","2023-09","2024-09"))  %>% 
+  filter(YEAR_MONTH %in% c("2014-12","2015-12","2016-12","2017-12","2018-12","2019-12","2020-12","2021-12","2022-12","2023-12","2024-12"))  %>% 
   mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
          `OZ designation` = case_when(
            Designation_category %in% c("LIC selected","Contiguous selected") ~ "OZ tracts",
@@ -224,7 +226,7 @@ write.xlsx(growth, file = "Total Address Growth Rate, simplified.xlsx")
 # Simplified version - growth rate - for generating line plot
 
 growth_rate_simple  <- USPS_data %>%
-  filter(YEAR_MONTH %in% c("2014-09","2015-09","2016-09","2017-09","2018-09","2019-09","2020-09","2021-09","2022-09","2023-09","2024-09"))  %>% 
+  filter(YEAR_MONTH %in% c("2014-12","2015-12","2016-12","2017-12","2018-12","2019-12","2020-12","2021-12","2022-12","2023-12","2024-12"))  %>% 
   mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
          `OZ designation` = case_when(
            Designation_category %in% c("LIC selected","Contiguous selected") ~ "OZ tracts",
