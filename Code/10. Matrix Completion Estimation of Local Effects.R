@@ -66,7 +66,7 @@ load(file = "USPS_tract_vacancy_2012_2024_2020_definitions.RData")
 USPS_data <- USPS_data %>%
   filter(`Designation_category` %in% c("LIC selected","LIC not selected")) %>%
   filter(Sample == "In Clean Sample") %>%
-  filter(YEAR %in% c(2016,2017,2018,2019) | date == "2023-12-01") %>%
+  filter(YEAR %in% c(2016,2017,2018,2019) | date == "2024-12-01") %>%
   mutate(
     id = as.numeric(geoid), 
     time = dense_rank(date),
@@ -82,7 +82,6 @@ USPS_data <- USPS_data %>%
          poverty_rate, median_income, unemployment_rate, prime_age_share, solo_detached_housing_share,
          `current median income decile`, `current poverty rate decile`, `current solo detached decile`,
          Total_active, log_Total_active) %>%
-  na.omit() %>%
   mutate(type_tract = as.numeric(as.factor("Type tract")))
 
 # Ensure panel is balanced after removing missing data periods
@@ -127,11 +126,11 @@ run_and_plot <- function(method, selected_data) {
     cv.donut = 0,
     criterion = "mspe",
     method = method,
-    # se = TRUE,
-    se = FALSE,
+    se = TRUE,
+    # se = FALSE,
     vartype = "jackknife",
     quantile.CI = FALSE,
-    nboots = 50,
+    nboots = 100,
     alpha = 0.05,
     parallel = TRUE,
     cores = 12,
@@ -222,8 +221,8 @@ for (i in seq_len(n_treated)) {
     na.omit()
   
   # Run matrix completion estimation (using method = "mc")
-  # model_output[[i]] <- run_and_plot(method = "mc", selected_data = temp_data)
-  model_output[[i]] <- run_and_plot(method = "fe", selected_data = temp_data)
+  model_output[[i]] <- run_and_plot(method = "mc", selected_data = temp_data)
+  # model_output[[i]] <- run_and_plot(method = "fe", selected_data = temp_data)
   
   # Extract effect estimates for the treated unit
   Effect <- model_output[[i]][["eff"]]
@@ -234,29 +233,29 @@ for (i in seq_len(n_treated)) {
   Effect <- cbind(id = rownames(Effect), Effect)
   
   # Reshape into long format and compute confidence bounds
-  # effect_long <- Effect %>%
-  #   pivot_longer(
-  #     cols = starts_with("Period:"),
-  #     names_to = "Period",
-  #     values_to = "Effect on Total Addresses"
-  #   ) %>%
-  #   mutate(`Average S.E.` = model_output[[i]][["est.avg"]][[2]],
-  #          Upper = `Effect on Total Addresses` + `Average S.E.` * 1.96,
-  #          Lower = `Effect on Total Addresses` - `Average S.E.` * 1.96,
-  #          Significant = case_when(
-  #            (Lower > 0 & Upper > 0) | (Lower < 0 & Upper < 0) ~ 1,
-  #            (pmin(Lower, Upper) <= 0 & pmax(Lower, Upper) >= 0) ~ 0,
-  #            TRUE ~ NA_real_
-  #          )) %>%
-  #   filter(id == current_treated_id) 
-  
   effect_long <- Effect %>%
     pivot_longer(
       cols = starts_with("Period:"),
       names_to = "Period",
       values_to = "Effect on Total Addresses"
     ) %>%
-  filter(id == current_treated_id)
+    mutate(`Average S.E.` = model_output[[i]][["est.avg"]][[2]],
+           Upper = `Effect on Total Addresses` + `Average S.E.` * 1.96,
+           Lower = `Effect on Total Addresses` - `Average S.E.` * 1.96,
+           Significant = case_when(
+             (Lower > 0 & Upper > 0) | (Lower < 0 & Upper < 0) ~ 1,
+             (pmin(Lower, Upper) <= 0 & pmax(Lower, Upper) >= 0) ~ 0,
+             TRUE ~ NA_real_
+           )) %>%
+    filter(id == current_treated_id)
+  
+  # effect_long <- Effect %>%
+  #   pivot_longer(
+  #     cols = starts_with("Period:"),
+  #     names_to = "Period",
+  #     values_to = "Effect on Total Addresses"
+  #   ) %>%
+  # filter(id == current_treated_id)
   
   estimate_list[[i]] <- effect_long
   
@@ -276,8 +275,8 @@ All_estimates <- bind_rows(estimate_list)
 
 # Save the effect estimates and estimation outputs as needed
 setwd(path_output)
-# save(All_estimates, file = "MC_FECT_Effect_Estimates_and_SE.RData")
-# save(model_output, file = "MC FECT Estiamted Models.RData")
+save(All_estimates, file = "MC_FECT_Effect_Estimates_and_SE.RData")
+save(model_output, file = "MC FECT Estiamted Models.RData")
 # Optionally, you might want to also save the individual model outputs if needed.
 
 # You can now proceed with plotting or additional analysis on All_estimates
