@@ -19,6 +19,8 @@ library(ggplot2)
 # Define user-specific project directories
 project_directories <- list(
   "name" = "PATH TO GITHUB REPO",
+  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
+  "bngla" = "C:/Users/bngla/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply"
 )
 
 # Setting project path based on current user
