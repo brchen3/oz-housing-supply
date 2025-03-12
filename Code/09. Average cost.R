@@ -40,15 +40,14 @@ path_output <- file.path(path_project, "Output")
 did_results <- read.xlsx(file.path(path_output, "CSDID Effect Estimate.xlsx"))
 
 # Additional calculations based on the provided text
-avg_effect <- did_results %>% filter(Tract.Geography == "All") %>%
-  select(Active.and.Vacant.Residential) %>%
-  mutate(Active.and.Vacant.Residential = as.numeric(stringr::str_sub(end = 5,start = 1,string = Active.and.Vacant.Residential))) # average new addresses per OZ tract
-
+avg_effect <- 35.66
 oz_tracts <- 8764           # total number of OZ tracts
   
 oz_new_estimated <- avg_effect * oz_tracts  # estimated new addresses due to OZs
 cost <- 8200000000
+# cost <- 8200000000*0.75 # uncomment for estimate revized down 75%
 cost_character <- "8.2 billion"
+# cost_character <- "6.15 billion"
 
 ####################################
 ###         Top line stat        ###
