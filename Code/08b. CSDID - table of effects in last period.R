@@ -27,6 +27,9 @@ library(openxlsx)
 #################
 # Define user-specific project directories
 project_directories <- list(
+  "name" = "PATH TO GITHUB REPO",
+  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
+  "bngla" = "C:/Users/bngla/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
   "name" = "PATH TO GITHUB REPO"
 )
 
@@ -55,10 +58,17 @@ load(file = "USPS_tract_vacancy_2012_2024_2020_definitions.RData")
 ### If a tract in 2020 is a mix of any version of the LIC, contiguous or inelligible, then drop it from the analysis - conservative first pass
 
 USPS_data <- USPS_data %>%
-  filter(`Designation_category` %in% c("LIC selected","LIC not selected")) %>%
   filter(Sample == "In Clean Sample") %>%
-  # filter(`Designation_category_detailed` != "LIC not selected, border tract") %>%
-  mutate(NO_STAT_ALL = NO_STAT_OTHER_ADDRESSES + NO_STAT_BUSINESS_ADDRESSES + NO_STAT_RESIDENTIAL_ADDRESSES)
+  filter(YEAR >=2015) 
+
+#  https://www.huduser.gov/apps/public/usps/download_pdf/2018-USPS-FAQ.pdf 
+# There is a phenomenon that HUD has been studying that involves a sudden, sharp
+# increase in the number of addresses in the USPS No-Stat category, which also manifests
+# itself in an increase in the total number of addresses. The increase in addresses is over 7
+# million since 2011, with the bulk of those increases happening in two quarters – one in
+# 2011 and the other in 2014. There is no evidence to be found in any of the available
+# national administrative or survey data sources that would make that kind of increase in
+# the number of residential housing units plausible. 
 
 #################
 ### What are the trends in vacancy (counts and share) across designated and undesignated but eligible tracts? 
@@ -67,52 +77,74 @@ USPS_data <- USPS_data %>%
 USPS_data <- USPS_data %>% 
   mutate( period = dense_rank(date))
 
-period_value <- min(USPS_data$period[USPS_data$date == "2020-03-01"])
+period_value <- min(USPS_data$period[USPS_data$date == "2018-03-01"])
+# period_value <- min(USPS_data$period[USPS_data$date == "2020-03-01"])
 
 ##### Time Invariant Values
 time_invariant <- USPS_data %>% 
-  filter(date == "2016-12-01") %>%
-  select(geoid,`poverty_rate`:`prime_age_share`)
+  filter(date == "2017-12-01") %>%
+  select(geoid,Designation_category,`poverty_rate`:`employed_tract_residents`) %>%
+  mutate(`current median income decile` = ntile(median_income, 10),
+         `current poverty rate decile` = ntile(poverty_rate, 10),
+         `current solo detached decile` = ntile(solo_detached_housing_share, 10)) %>%
+  na.omit()
+
+# table(time_invariant$Designation_category, time_invariant$`current median income decile`)
+# table(time_invariant$Designation_category, time_invariant$`current poverty rate decile`)
 
 # Continue with other data transformations as needed
 USPS_data <- USPS_data %>%
-  select(-c(`poverty_rate`:`prime_age_share`)) %>%
+  select(-c(`poverty_rate`:`employed_tract_residents`)) %>%
   filter(!is.na(ACTIVE_RESIDENTIAL_ADDRESSES)) %>%
-  filter(!is.na(ACTIVE_BUSINESS_ADDRESSES)) %>%
-  filter(!is.na(ACTIVE_OTHER_ADDRESSES)) %>%
+  # filter(!is.na(ACTIVE_BUSINESS_ADDRESSES)) %>%
+  # filter(!is.na(ACTIVE_OTHER_ADDRESSES)) %>%
   mutate(
     G = if_else(`OZ Designation` == 1, period_value, 0),
     geoid_num = as.numeric(geoid),
     
-    Total_active_vacant_exclude_nostat = 
-      ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES +
-      ACTIVE_BUSINESS_ADDRESSES + STV_BUSINESS_ADDRESSES + LTV_BUSINESS_ADDRESSES +
-      ACTIVE_OTHER_ADDRESSES + STV_OTHER_ADDRESSES + LTV_OTHER_ADDRESSES, 
+    # Total_active_vacant_exclude_nostat = 
+    #   ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES +
+    #   ACTIVE_BUSINESS_ADDRESSES + STV_BUSINESS_ADDRESSES + LTV_BUSINESS_ADDRESSES +
+    #   ACTIVE_OTHER_ADDRESSES + STV_OTHER_ADDRESSES + LTV_OTHER_ADDRESSES, 
     
-    Total_active_vacant_exclude_nostat_RESIDENTIAL = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
-    Total_active_vacant_exclude_nostat_BUSINESS = ACTIVE_BUSINESS_ADDRESSES + STV_BUSINESS_ADDRESSES + LTV_BUSINESS_ADDRESSES,
-    Total_active_vacant_exclude_nostat_OTHER = ACTIVE_OTHER_ADDRESSES + STV_OTHER_ADDRESSES + LTV_OTHER_ADDRESSES,
+    Total_active_vacant_exclude_nostat_RESIDENTIAL = 
+      ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
     
-    VACANCY_RATE_ALL = 100*((STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES + STV_BUSINESS_ADDRESSES + LTV_BUSINESS_ADDRESSES +STV_OTHER_ADDRESSES + LTV_OTHER_ADDRESSES)/(Total_active_vacant_exclude_nostat)),
-    VACANCY_RATE_RESIDENTIAL = 100*((STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES)/(Total_active_vacant_exclude_nostat_RESIDENTIAL)),
-    VACANCY_RATE_BUSINESS = 100*((STV_BUSINESS_ADDRESSES + LTV_BUSINESS_ADDRESSES)/(Total_active_vacant_exclude_nostat_BUSINESS)),
-    VACANCY_RATE_OTHER = 100*((STV_OTHER_ADDRESSES + LTV_OTHER_ADDRESSES)/(Total_active_vacant_exclude_nostat_OTHER))
+    # VACANCY_RATE_ALL = 100*((STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES + STV_BUSINESS_ADDRESSES + LTV_BUSINESS_ADDRESSES +STV_OTHER_ADDRESSES + LTV_OTHER_ADDRESSES)/(Total_active_vacant_exclude_nostat)),
+    # VACANCY_RATE_RESIDENTIAL = 100*((STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES)/(Total_active_vacant_exclude_nostat_RESIDENTIAL)),
+    # VACANCY_RATE_BUSINESS = 100*((STV_BUSINESS_ADDRESSES + LTV_BUSINESS_ADDRESSES)/(Total_active_vacant_exclude_nostat_BUSINESS)),
+    # VACANCY_RATE_OTHER = 100*((STV_OTHER_ADDRESSES + LTV_OTHER_ADDRESSES)/(Total_active_vacant_exclude_nostat_OTHER))
   ) %>%
   left_join(time_invariant) %>%
   mutate(
-    log_total_active_vacant_exclude_nostat = log(Total_active_vacant_exclude_nostat),
     log_res_address = log(Total_active_vacant_exclude_nostat_RESIDENTIAL),
-    log_bus_address = log(Total_active_vacant_exclude_nostat_BUSINESS),
-    log_other_address = log(Total_active_vacant_exclude_nostat_OTHER)
   ) %>%
   mutate(
-    log_total_active_vacant_exclude_nostat = if_else(log_total_active_vacant_exclude_nostat<0,NA,log_total_active_vacant_exclude_nostat),
     log_res_address = if_else(log_res_address<0,NA,log_res_address),
-    log_bus_address = if_else(log_bus_address<0,NA,log_bus_address),
-    log_other_address = if_else(log_other_address<0,NA,log_other_address)
-    )
+  )
 
-# Filtering out tracts with missing data, copied from 08a
+# USPS_data <- USPS_data %>% 
+# filter(`Designation_category` %in% c("LIC selected","LIC not selected"))
+# filter(`Designation_category` %in% c("LIC selected","LIC not selected") | `current median income decile` <= 6 | `current poverty rate decile` >=5 )
+
+# Calculate the annual rate of growth for total active and vacant residential
+
+panel_USPS <- plm::pdata.frame(USPS_data, index = c("geoid_num","period"), drop.index = FALSE)
+
+panel_USPS$change <- panel_USPS$Total_active_vacant_exclude_nostat_RESIDENTIAL - plm::lag(panel_USPS$Total_active_vacant_exclude_nostat_RESIDENTIAL, k = 4)
+panel_USPS$growth_rate <- panel_USPS$change/plm::lag(panel_USPS$Total_active_vacant_exclude_nostat_RESIDENTIAL, k = 4)
+
+panel_USPS <- panel_USPS %>% 
+  as.data.frame() %>%
+  select("geoid","period","change","growth_rate") %>%
+  mutate(geoid = as.numeric(geoid),
+         period = as.numeric(period))
+
+USPS_data <- USPS_data %>%
+  left_join(panel_USPS) %>%
+  mutate(growth_rate = if_else(growth_rate == Inf, NA, growth_rate))
+
+# Count the number of quarters covered by the data set for each tract
 USPS_data <- USPS_data %>%
   distinct(geoid, date, .keep_all = TRUE) %>%
   group_by(geoid) %>%
@@ -121,19 +153,13 @@ USPS_data <- USPS_data %>%
 
 max_quarters <- max(USPS_data$number_of_quarters)
 
+# Filter out tracts with missing quarters
 USPS_data <- USPS_data %>%
-  filter(number_of_quarters == max_quarters) %>%
-  mutate( NO_STAT_ALL = case_when(
-    date == "2017-09-01" ~ NA,
-    TRUE ~ NO_STAT_ALL
-  ))
-  
-#########################
-### keep only the last period of treatment and pre-treatment periods
-USPS_data <- USPS_data %>%
-  filter( period == max(period) | period < period_value) %>%
-  mutate(period = if_else(period > period_value, period_value, period))
+  filter(number_of_quarters == max_quarters) 
 
+#######################
+### Build DID Model ###
+#######################
 # Variable initialization
 data_list <- list()
 dynamic_results_list <- list()
@@ -146,7 +172,6 @@ dates <- sort(unique(USPS_data$date))[2:length(sort(unique(USPS_data$date)))]
 plots <- list()
 plot_list <- list()
 
-# Dependent variable
 outcome_vars[[1]] <- c(
   "Total_active_vacant_exclude_nostat_RESIDENTIAL"
   , "log_res_address"
@@ -154,7 +179,7 @@ outcome_vars[[1]] <- c(
 
 titles <- c(
   "Effect on  Active and Vacant Residential"
-  , "Effect on Log(Active Residential)"
+  , "Effect on Log(Active and Vacant Residential)"
 )
 
 table_titles <- c(
@@ -162,25 +187,32 @@ table_titles <- c(
   , "Log(Active and Vacant Residential)"
 )
 
+# controls      <- c("poverty_rate", "median_income")
+controls      <- c("poverty_rate","median_income","solo_detached_housing_share")
+control_vars  <- paste(controls, collapse = " + ")
+current_formula <- as.formula(paste("~", control_vars))
+
 titles_df <- as.data.frame(cbind(table_titles, outcome_vars[[1]]))
 names(titles_df) <- c("titles", "outcome_var")
 
-# Split data by tract
+# Get sorted list of geoids for the census tracts of interest
 Metro_groupings <- sort(unique(USPS_data$`Type tract`))
 geo_groupings <- c("All",Metro_groupings)
+
+# Split data by census tract
 data_list[[1]] <- USPS_data
 for(i in seq_along(Metro_groupings)){
   j <- i + 1
   data_list[[j]] <- USPS_data %>% filter(`Type tract` == Metro_groupings[[i]])
 }
 
+# Transform time variable
 dates_df <- USPS_data %>%
   select(period, date) %>%
   distinct() %>%
   arrange(period) %>% 
   mutate(period = period - period_value)
 
-# Create the DID model and plot the pre-post treatment comparison
 for (j in seq_along(geo_groupings)){
   print(geo_groupings[[j]])
   
@@ -190,26 +222,37 @@ for (j in seq_along(geo_groupings)){
     # filter job and employment data by year
     if(outcome_vars[[1]][[i]] %in% c("jobs_in_tract","employed_tract_residents")){
       analysis_data <- data_list[[j]] %>%
-        filter(MONTH =="12")
+        filter(MONTH =="12") %>% 
+        select("geoid_num","period","G", outcome_vars[[1]][[i]],
+               all_of(controls)) %>%
+        na.omit()
     }else{
-      analysis_data <- data_list[[j]]
+      analysis_data <- data_list[[j]] %>%
+        select("geoid_num","period","G", outcome_vars[[1]][[i]],
+               all_of(controls)) %>%
+        na.omit()
     }
     
+    # create linear model for the treated group
     csdid_treated[[i]] <- att_gt(
       yname = outcome_vars[[1]][[i]],
       tname = "period",
       idname = "geoid_num",
       gname = "G",
-      xformla = ~poverty_rate + median_income + unemployment_rate + prime_age_share,
+      xformla = current_formula,
+      # est_method = "ipw",
       biters = 1000,
       pl = TRUE,
-      data = analysis_data
+      data = analysis_data,
+      base_period = "universal"
     )
     
     # compute the overall effect by averaging the effect of the treatment across
     # all positive lengths of exposure
-    dynamic[[i]] <- aggte(csdid_treated[[i]], 
-                          alp = 0.1,
+    dynamic[[i]] <- aggte(csdid_treated[[i]],
+                          # alp = 0.01,
+                          # alp = 0.02,
+                          alp = 0.05,
                           type = "dynamic",
                           na.rm = TRUE) 
     
@@ -296,24 +339,35 @@ for (k in seq_len(nrow(results_export_list))) {
   geo_index <- which(geo_groupings == current_geo)
   outcome_index <- which(outcome_vars[[1]] == current_outcome)
   
+  # Number of periods estimated 
+  time_period_count <- length(dynamic_results_list[[geo_index]][[outcome_index]]$att.egt)
   # Extract ATT, SE, and critical value
-  att <- dynamic_results_list[[geo_index]][[outcome_index]]$overall.att
+  # att <- dynamic_results_list[[geo_index]][[outcome_index]]$overall.att
+  att <- dynamic_results_list[[geo_index]][[outcome_index]]$att.egt[time_period_count]
+  
+  
   crit_val <- dynamic_results_list[[geo_index]][[outcome_index]]$crit.val.egt[1]
   
   # Format the coefficient with an asterisk if significant
-  if(!current_outcome %in% c( "log_total_active_vacant_exclude_nostat","log_bus_address","log_other_address","log_res_address")){
-    se <- round(dynamic_results_list[[geo_index]][[outcome_index]]$overall.se,2)
+  if(!current_outcome %in% c( "log_total_active_vacant_exclude_nostat"
+                              , "growth_rate"
+                              ,"log_bus_address"
+                              ,"log_other_address"
+                              ,"log_res_address")){
+    se <- round(dynamic_results_list[[geo_index]][[outcome_index]]$se.egt[time_period_count],3)
     
     formatted_coef[k] <- paste0(
-      round(att, 2), " ",
+      round(att, 3), " ",
       if_else((att / se) > crit_val, "*", ""))
   }else{
-    se <- round(dynamic_results_list[[geo_index]][[outcome_index]]$overall.se,4)
+    se <- round(dynamic_results_list[[geo_index]][[outcome_index]]$se.egt[time_period_count],4)
+    
     
     formatted_coef[k] <- paste0(
       round(att, 4), " ",
       if_else((att / se) > crit_val, "*", ""))
   }
+  
   
   # Store the standard error
   se_values[k] <- se
