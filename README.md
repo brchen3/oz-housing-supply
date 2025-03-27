@@ -1,7 +1,7 @@
 <h1>The Impact of Opportunity Zones on Housing Supply</h1>
-This repository includes methods and documents to support the paper [The Impact of Opportunity Zones on Housing Supply](https://eig.org/oppotunity-zones-housing-supply), made publicly available on March 11th, 2025. The draft is an active working paper hosted by the Economic Innovation Group.
+This repository includes methods and documents to support the paper The Impact of Opportunity Zones on Housing Supply (https://eig.org/oppotunity-zones-housing-supply), made publicly available on March 11th, 2025. The draft is an active working paper hosted by the Economic Innovation Group.
 
-Note that this is a living repository and adjustments to the data and results that come from the code in this analysis may precede changes to the published working draft.
+Note that this is a living repository and adjustments to the data and results that come from the code in this analysis may precede changes to the published working draft. THAT IS CURRENTLY THE CASE. THE CODE AND DATA PUBLISHED HERE IS NOW FURTHER ALONG THAN THE RELEASED DRAFT.
 
 Contact Ben Glasner (benjamin@eig.org) with any questions or concerns regarding inconsistencies.
 
