@@ -35,6 +35,9 @@ library(progress)
 #################
 # Define user-specific project directories
 project_directories <- list(
+  "name" = "PATH TO GITHUB REPO",
+  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
+  "bngla" = "C:/Users/bngla/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
   "name" = "PATH TO GITHUB REPO"
 )
 
@@ -128,7 +131,7 @@ run_and_plot <- function(method, selected_data) {
     # se = FALSE,
     vartype = "jackknife",
     quantile.CI = FALSE,
-    nboots = 100,
+    nboots = 25,
     alpha = 0.05,
     parallel = TRUE,
     cores = 12,
