@@ -29,13 +29,15 @@ library(plm)
 library(ggplot2)
 library(tigris)
 library(stringr)
+library(tidycensus)
+library(tidyverse)
 
 #################
 ### Set paths ###
 #################
 # Define user-specific project directories
 project_directories <- list(
-  "name" = "PATH TO GITHUB REPO"
+  "BChen" = "C:/Users/bchen/Documents/GitHub/oz-housing-supply"
 )
 
 # Setting project path based on current user
@@ -60,11 +62,39 @@ path_output <- file.path(path_project, "Output")
 #################
 # tract - crosswalk
 
-CENSUS_TRACT_CROSSWALK <- read_excel(file.path(path_data_crosswalks, "CENSUS_TRACT_CROSSWALK_2010_to_2020_2010.xlsx"))
+CENSUS_TRACT_CROSSWALK <- read_excel(file.path(path_data_crosswalks, "CENSUS_TRACT_CROSSWALK_2010_to_2020_2019.xlsx"))
 
 # time invariant characteristics
-NCWM_Economic_Development2 <- read_excel(file.path(path_data, "NCWM_Economic_Development2.xlsx")) %>%
-  mutate(geoid = as.numeric(GEOID))
+# NCWM_Economic_Development2 <- read_excel(file.path(path_data, "NCWM_Economic_Development2.xlsx")) %>%
+#   mutate(geoid = as.numeric(GEOID))
+states <- unique(fips_codes$state)[1:51]  # 50 states + DC
+
+tract_data <- map_df(states, function(state) {
+  get_acs(
+    geography = "tract",
+    variables = c(
+      total_pop = "B01003_001",
+      housing_units = "B25001_001",
+      median_age = "B01002_001"
+    ),
+    year = 2010,
+    survey = "acs5",
+    state = state,
+    geometry = TRUE,
+    output = "wide"
+  )
+})
+
+
+
+tract_data_clean <- tract_data %>%
+  select(GEOID, NAME, total_popE, median_ageE, geometry) %>% 
+  left_join(tract_designation, by = c("GEOID" = "geoid")) %>% 
+  mutate(Designation_category = case_when(
+    is.na(Designation_category) ~ "Ineligible",
+    TRUE ~ Designation_category
+  ))
+
 
 #####################
 ### Load HUD data ###
@@ -84,17 +114,17 @@ USPS_data <- bind_rows(data_list)
 
 USPS_data <- USPS_data %>%
   mutate(date = as.Date(paste0(YEAR, "/", MONTH, "/01"), format = "%Y/%m/%d"))
-
-# simplify the variable list:
-USPS_data <- USPS_data %>%
-  select(
-    TRACT20:YEAR_MONTH,date,
-    TOTAL_RESIDENTIAL_ADDRESSES:NO_STAT_OTHER_ADDRESSES
-    )
+# 
+# # simplify the variable list:
+# USPS_data <- USPS_data %>%
+#   select(
+#     geoid, YEAR, MONTH, date,
+#     TOTAL_RESIDENTIAL_ADDRESSES:NO_STAT_OTHER_ADDRESSES
+#     )
 
 # Ensure that only tracts in 50 states and DC are included in the analysis - 
 USPS_data <- USPS_data %>%
-  mutate(state_fips = as.numeric(str_sub(TRACT20,start = 1,end = 2))) %>%
+  mutate(state_fips = as.numeric(str_sub(geoid,start = 1,end = 2))) %>%
   filter(state_fips <=56)
 
 
@@ -107,7 +137,7 @@ setwd(path_data_tract)
 
 # see 2. OZ eligible tracts build.R
 tract_designation <- read.csv("2020_tracts_with_2010_qualifications.csv") %>%
-  mutate(geoid = as.numeric(GEOID_2020)) %>% 
+  mutate(geoid = as.character(GEOID_2020)) %>% 
   select(-X) %>%
   select(-GEOID_2020)
   
@@ -115,8 +145,15 @@ tract_designation_geoid <- sort(unique(tract_designation$geoid))
 
 # read National Center for Education Statistics 2021 classifications,
 # for urban-rural tract classification schema
-NCES_Locales_Tract_2020 <- readr::read_csv("NCES Locales Tract CSV.csv") %>%
-  rename(geoid = FIPS) %>%
+NCES_Locales_Tract_2020 <- readr::read_csv("NCES Locales Tract CSV.csv") %>% 
+  rename(geoid = geoid_2010) %>%
+  mutate(`Type tract` = case_when(
+    rural_perc < 0.4 & urban > 4000 ~ "Large urban",
+    rural_perc < 0.4 & urban > 2000 ~ "Mid-sized urban",
+    rural_perc < 0.4 ~ "Small urban",
+    rural_perc >= 0.5 ~ "Rural",
+    TRUE ~ "Suburban"
+  )) %>% 
   select(geoid, `Type tract`) 
 
 
@@ -131,9 +168,9 @@ openxlsx::write.xlsx(ACS_2012_2023, file = "ACS_2012_2023_2020tracts.xlsx") # sa
 # tract neighboring info
 OZ_Adjc_Trcts <- read.csv("OZ_Adjc_Trcts.csv")
 OZ_Adjc_Trcts <- OZ_Adjc_Trcts %>%
-  mutate(geoid = as.numeric(Adj_FIPS)) %>%
-  select(geoid, OZ_FIPS) %>%
-  rename(neighbor_oz = OZ_FIPS)
+  mutate(neighbor_oz = 1,
+         GEOID = as.character(GEOID)) %>% 
+  select(-geometry)
 
 # Load the LODES data 
 # see 3. LODES data build.R
@@ -141,8 +178,12 @@ OZ_Adjc_Trcts <- OZ_Adjc_Trcts %>%
 setwd(path_data_lodes)
 LODES  <- readr::read_csv("tract_workers_and_residents.csv") %>%
   filter(year >=2012) %>%
-  mutate(YEAR = as.character(year)) %>%
-  rename(geoid = tract_geocode) %>%
+  mutate(YEAR = as.character(year),
+         YEAR = case_when(
+           YEAR == "2018" ~ "2019",
+           TRUE ~ YEAR
+         )) %>%
+  rename(geoid = trct) %>%
   select(geoid, YEAR, jobs_in_tract, employed_tract_residents)
 
 
@@ -150,8 +191,7 @@ LODES  <- readr::read_csv("tract_workers_and_residents.csv") %>%
 #########################################
 # time invariant tract characteristics
 
-time_inv <- NCWM_Economic_Development2 %>%
-  left_join(tract_designation) %>%
+time_inv <- tract_data_clean %>%
   mutate(
     
   Sample = case_when(
@@ -171,12 +211,15 @@ time_inv <- NCWM_Economic_Development2 %>%
     )
   
   ) %>%
-  left_join(NCES_Locales_Tract_2020) %>%
-  select(geoid,
-         QCT,NMTC,`OZ Designation`,OZ_2020,
+  left_join(NCES_Locales_Tract_2020, by = c("GEOID" = "geoid")) %>%
+  select(GEOID,
+         #QCT,
+         #NMTC,
+         `OZ Designation`,
+         #OZ_2020,
          `Designation_category`,Sample,
          `Type tract`) %>%
-  left_join(OZ_Adjc_Trcts) %>%
+  left_join(OZ_Adjc_Trcts, by = c("GEOID" = "GEOID")) %>%
   mutate(next_to_oz = case_when(
     is.na(neighbor_oz) ~ 0,
     !is.na(neighbor_oz) ~ 1,
@@ -184,7 +227,7 @@ time_inv <- NCWM_Economic_Development2 %>%
   ))
 
 time_inv <- time_inv %>%
-  distinct(geoid, .keep_all = TRUE)
+  distinct(GEOID, .keep_all = TRUE)
 
 
 setwd(path_data)
@@ -195,10 +238,10 @@ save(time_inv, file = "Tract_2020_time_invariant_characteristics.RData")
 # Step 1: Summarize and pivot the data
 pivot_tbl <- time_inv %>%
   filter(Sample == "In Clean Sample") %>%
-  group_by(Designation_category, OZ_2020) %>%
-  summarise(count = n(), .groups = "drop") %>%
+  group_by(Designation_category, GEOID) %>%
+  summarise(count = n(), .groups = "drop") #%>%
   pivot_wider(
-    names_from = OZ_2020,
+    names_from = GEOID,
     values_from = count,
     values_fill = list(count = 0)
   )
@@ -226,10 +269,11 @@ pivot_tbl <- time_inv %>%
     names_from = `OZ Designation`,
     values_from = count,
     values_fill = list(count = 0)
-  )
+  ) %>% 
+  sf::st_drop_geometry()
 
 # Step 2: Add a totals column by summing across each row
-pivot_tbl <- pivot_tbl %>%
+pivot_tbl <- pivot_tbl %>% 
   mutate(Total = rowSums(across(where(is.numeric))))
 
 # Step 3: Create a summary row that sums each numeric column
@@ -259,10 +303,12 @@ final_table
 
 ###########
 USPS_data <- USPS_data %>%
-  mutate(geoid = as.numeric(as.character(TRACT20))) %>%
+  #mutate(geoid = as.numeric(as.character(TRACT20))) %>%
   distinct(geoid, date, .keep_all = TRUE) %>%
   group_by(geoid) %>%
-  mutate(number_of_quarters = n()) %>%
+  mutate(number_of_quarters = n(),
+         geoid = as.numeric(geoid),
+         YEAR = as.character(YEAR)) %>%
   ungroup()
 
 max_quarters <- max(USPS_data$number_of_quarters)
@@ -271,8 +317,8 @@ USPS_data <- USPS_data %>%
   filter(number_of_quarters == max_quarters)
 
 USPS_data <- USPS_data %>% 
-  left_join(time_inv) %>%
-  left_join(ACS_2012_2023) %>%
+  left_join(time_inv %>% mutate(GEOID = as.numeric(GEOID)), by = c("geoid" = "GEOID")) %>%
+  left_join(ACS_2012_2023) %>% 
   left_join(LODES)
 
 USPS_data <- USPS_data %>%
@@ -290,19 +336,20 @@ USPS_data <- USPS_data %>%
     Designation_category == "Contiguous selected" ~ "Contiguous selected",
     
     TRUE ~ NA
-  ))
+  ),
+  YEAR_MONTH = paste0(YEAR, "-", MONTH))
 
 # After all the cleaning counts are:
 USPS_data %>%
   filter(Sample == "In Clean Sample") %>%
-  filter(YEAR_MONTH == "2020-03") %>% 
+  filter(YEAR_MONTH == "2019-09") %>% 
   group_by(`Designation_category`, `OZ Designation`) %>%
   summarise(count = n()) %>%
   ungroup() 
 
 USPS_data %>%
   filter(Sample == "In Clean Sample") %>%
-  filter(YEAR_MONTH == "2020-03") %>% 
+  filter(YEAR_MONTH == "2023-09") %>% 
   group_by(`Designation_category_detailed`, `OZ Designation`) %>%
   summarise(count = n()) %>%
   ungroup() 

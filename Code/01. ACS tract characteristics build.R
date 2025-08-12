@@ -22,7 +22,7 @@ library(readxl)
 #################
 # Define user-specific project directories
 project_directories <- list(
-  "name" = "PATH TO GITHUB REPO"
+  "BChen" = "C:/Users/bchen/Documents/GitHub/oz-housing-supply"
   )
 
 # Setting project path based on current user
@@ -190,7 +190,7 @@ ACS_2020_2023 <- ACS_2012_2023 %>%
 
 # load 2010 to 2020 crosswalk from HUD.
 setwd(path_data)
-CENSUS_TRACT_CROSSWALK <- read_excel(file.path(path_data_crosswalks, "CENSUS_TRACT_CROSSWALK_2010_to_2020_2020.xlsx"))
+CENSUS_TRACT_CROSSWALK <- read_excel(file.path(path_data_crosswalks, "CENSUS_TRACT_CROSSWALK_2010_to_2020_2019.xlsx"))
 
 # merge tract info to ACS_2012_2019
 ACS_2012_2019 <- ACS_2012_2019 %>% 

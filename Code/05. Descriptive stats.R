@@ -22,7 +22,7 @@ library(openxlsx)
 #################
 # Define user-specific project directories
 project_directories <- list(
-  "name" = "PATH TO GITHUB REPO"
+  "BChen" = "C:/Users/bchen/Documents/GitHub/oz-housing-supply"
 )
 
 # Setting project path based on current user
@@ -81,8 +81,8 @@ table(USPS_data$date, USPS_data$Group_var)
 
 # Step 1: trim data to the study period
 table_df <- USPS_data %>%
-  filter(date == "2017-03-01") %>% 
-  mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES)
+  filter(date == "2019-09-01") %>% 
+  mutate(`Active and Vacant, Residential` =  `Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential` + `Total Count of No-Stat Addresses - Residential`)
   
 # Step 2: Aggregate USPS address counts
 address_counts <- table_df %>%
@@ -90,7 +90,7 @@ address_counts <- table_df %>%
   group_by(Group_var) %>%
   summarise(
     `Median Active and Vacant Residential Address Count` = median(`Active and Vacant, Residential`, na.rm = TRUE),
-    `Median Active Residential Address Count` = median(ACTIVE_RESIDENTIAL_ADDRESSES, na.rm = TRUE),
+    `Median Active Residential Address Count` = median(`Total Count of Addresses - Residential`, na.rm = TRUE),
     # `Median Active Business Address Count` = median(ACTIVE_BUSINESS_ADDRESSES, na.rm = TRUE),
     # `Median Active Other Address Count` = median(ACTIVE_OTHER_ADDRESSES, na.rm = TRUE),
     
@@ -186,8 +186,8 @@ write.csv(final_table, file = "Descriptive Table.csv", row.names = FALSE)
 # Split the addresses in LIC by whether or not the tract is designated OZ
 summarized <- USPS_data  %>%
   filter(`Designation_category` %in% c("LIC not selected","LIC selected")) %>%
-  mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES) %>% 
-  select(
+  mutate(`Active and Vacant, Residential` =  `Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential` + `Total Count of No-Stat Addresses - Residential`) %>% 
+select(
     geoid,
     date,`Type tract`,
      `Active and Vacant, Residential`,
@@ -235,7 +235,7 @@ wide_data %>%
   filter(!is.na(`Type tract`)) %>% 
   group_by(`Type tract`) %>%
   mutate(`Typical Active and Vacant, Residential - 2019-12 to zero` = `Typical Active and Vacant, Residential` - 
-           `Typical Active and Vacant, Residential`[date == "2019-12-01"]) %>%
+           `Typical Active and Vacant, Residential`[date == "2019-9-01"]) %>%
   ggplot(aes(x = date,
              group = `Type tract`,
              color = as.factor(`Type tract`))) + 
@@ -250,7 +250,7 @@ wide_data_res  <- wide_data %>%
   filter(!is.na(`Type tract`)) %>% 
   group_by(`Type tract`) %>%
   mutate(`Typical Active and Vacant, Residential - 2019-12 to zero` = `Typical Active and Vacant, Residential` - 
-           `Typical Active and Vacant, Residential`[date == "2019-12-01"]) %>%
+           `Typical Active and Vacant, Residential`[date == "2019-9-01"]) %>%
   ungroup() %>%
   select(`Type tract`, date, `Typical Active and Vacant, Residential - 2019-12 to zero`) %>%
   pivot_wider(names_from = `Type tract`, values_from = `Typical Active and Vacant, Residential - 2019-12 to zero`)

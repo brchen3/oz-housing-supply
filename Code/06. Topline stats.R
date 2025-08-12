@@ -17,7 +17,7 @@ library(openxlsx)
 #################
 # Define user-specific project directories
 project_directories <- list(
-  "name" = "PATH TO GITHUB REPO"
+  "BChen" = "C:/Users/bchen/Documents/GitHub/oz-housing-supply"
 )
 
 # Setting project path based on current user

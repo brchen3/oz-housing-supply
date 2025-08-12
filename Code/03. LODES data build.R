@@ -23,7 +23,7 @@ library(openxlsx)
 library(R.utils)
 
 project_directories <- list(
-  "name" = "PATH TO GITHUB REPO"
+  "BChen" = "C:/Users/bchen/Documents/GitHub/oz-housing-supply"
 )
 
 # Setting project path based on current user
@@ -64,48 +64,53 @@ rm(xwalk_raw)
 setwd(path_project)
 results_list = list()
 
-files_od = list.files(path_data_lodes, pattern = "*.gz")
+files_od = list.files(path_data_lodes, pattern = "*.csv")
 setwd(path_data_lodes)
 
-for (gz_file in files_od) {
+# for (file in files_od) {
+# 
+#       # #gunzip("gz_file", remove = FALSE) # un-comment this line if files are zipped.
+#       # 
+#       # csv_file = gsub(".gz" , "", gz_file)
+#       # 
+#       # year_val = substr(csv_file, 16, 19) # extract data year.
+#       # print(csv_file)
+#       # print(year_val)
+# 
+#       file = read.csv(paste(path_data_lodes, csv_file, sep="/")) %>%
+# 
+#         mutate(year = year_val) %>%
+# 
+#         select(w_geocode, h_geocode, S000, year)
+# 
+#       results_list[[gz_file]] = file
+# 
+# }
+#       
 
-      #gunzip("gz_file", remove = FALSE) # un-comment this line if files are zipped.
-      
-      csv_file = gsub(".gz" , "", gz_file)
-      
-      year_val = substr(csv_file, 16, 19) # extract data year.
-      print(csv_file)
-      print(year_val)
-      
-      file = read.csv(paste(project_path, "od", csv_file, sep="/")) %>%
-        
-        mutate(year = year_val) %>%
-        
-        select(w_geocode, h_geocode, S000, year)
-      
-      results_list[[gz_file]] = file
-      
-}
-      
-results = bind_rows(results_list)
+od_1 <-  read.csv(paste0(path_data_lodes,"/", files_od[1]))
+od_2 <-  read.csv(paste0(path_data_lodes,"/", files_od[2]))
+
+
+#results = bind_rows(od_1, od_2)
 
 
 # 1. collapse total people who live in the tract with jobs anywhere
-tract_resident_workers = results %>%
-    left_join(xwalk, by = c("h_geocode" = "block_geocode")) %>%
-    rename(h_tract_geocode = tract_geocode) %>%
-    ungroup() %>%
-    group_by(h_tract_geocode, year) %>%
-    summarise(employed_tract_residents = sum(S000))
+tract_resident_workers = od_1 %>%
+    # left_join(xwalk, by = c("h_geocode" = "block_geocode")) %>%
+    # rename(h_tract_geocode = tract_geocode) %>%
+    # ungroup() %>%
+    group_by(trct, year) %>%
+    summarise(employed_tract_residents = sum(c000))
 
 
 # 2. collapse total jobs in the tract
-  tract_jobs = results %>%
-        left_join(xwalk, by = c("w_geocode" = "block_geocode")) %>%
-        rename(w_tract_geocode = tract_geocode) %>%
-        ungroup() %>%
-        group_by(w_tract_geocode, year) %>%
-        summarise(jobs_in_tract = sum(S000))
+  tract_jobs = od_2 %>%
+        # left_join(xwalk, by = c("trct" = "block_geocode")) %>%
+        # rename(w_tract_geocode = tract_geocode) %>%
+        # ungroup() %>%
+        group_by(trct, year) %>%
+        summarise(jobs_in_tract = sum(c000))
 
   
   rm(results, file, xwalk)
@@ -113,19 +118,16 @@ tract_resident_workers = results %>%
 
 # construct final dataset.
 lodes_residentworkers_jobs = full_join(tract_resident_workers, tract_jobs, 
-                          by = c("h_tract_geocode" = "w_tract_geocode",
+                          by = c("trct",
                                  "year")) %>%
   
-  filter(!is.na(h_tract_geocode)) %>%
+  filter(!is.na(trct)) %>%
   
   mutate(employed_tract_residents = 
            ifelse(is.na(employed_tract_residents), 0 , employed_tract_residents),
          
          jobs_in_tract = 
-           ifelse(is.na(jobs_in_tract), 0 , jobs_in_tract)) %>%
-  
-  
-  rename(tract_geocode = h_tract_geocode)
+           ifelse(is.na(jobs_in_tract), 0 , jobs_in_tract))
 
 
 setwd(path_data_lodes)

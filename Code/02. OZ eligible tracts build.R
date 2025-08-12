@@ -17,8 +17,8 @@ library(tidyr)
 #################
 # Define user-specific project directories
 project_directories <- list(
-    "name" = "PATH TO GITHUB REPO"
-  )
+  "BChen" = "C:/Users/bchen/Documents/GitHub/oz-housing-supply"
+)
 
 # Setting project path based on current user
 current_user <- Sys.info()[["user"]]
@@ -40,9 +40,14 @@ path_output <- file.path(path_project, "Output")
 # read in census tract OZ eligibility criteria; for 2010 census tracts
 setwd(path_data)
 
-initial_data = read_excel("Master Census Tract File_2013 to 2017.xlsx",
-                     sheet = "Data", skip=1) %>%
-  select(GEOID:`OZ Designation`)
+initial_data = read_excel("Master Census Tract File_2013 to 2017.xlsx") %>%
+  select(geoid, `DesignatedOZ`, Type) %>% 
+  mutate(selected_oz = case_when(
+    DesignatedOZ == 1 & Type == "Low-Income Community" ~ "Low-Income Community",
+    DesignatedOZ == 1 & Type == "Non-LIC Contiguous" ~ "Non-LIC Contiguous",
+    TRUE ~ "Not selected"
+    
+  ))
 
 # What are the categories of eligibility? 
 
@@ -65,20 +70,20 @@ oz_data <- initial_data %>%
   ungroup() %>%
   mutate(Designation = case_when(
     # Selected
-    `OZ Designation Criteria` == "Low-Income Community" ~ "LIC selected",
-    `OZ Designation Criteria` == "Non-LIC Contiguous" ~ "Contiguous selected",
+    DesignatedOZ == 1 & Type == "Low-Income Community" ~ "LIC selected",
+    DesignatedOZ == 1 & Type == "Non-LIC Contiguous" ~ "Contiguous selected",
     
     # Unselected
-    `OZ Designation Criteria` == "Not selected" & `Pre-Deisgnation 2011-2015 Eligibilty` == "LIC" ~ "LIC not selected",
-    `OZ Designation Criteria` == "Not selected" & `Pre-Deisgnation 2011-2015 Eligibilty` == "Contiguous" ~ "Contiguous not selected",
-    `OZ Designation Criteria` == "Not selected" & `Pre-Deisgnation 2011-2015 Eligibilty` == "Ineligible" ~ "Ineligible",
+    is.na(DesignatedOZ) & Type == "Low-Income Community" ~ "LIC not selected",
+    is.na(DesignatedOZ) & Type == "Non-LIC Contiguous" ~ "Contiguous not selected",
+    # `OZ Designation Criteria` == "Not selected" & `Pre-Deisgnation 2011-2015 Eligibilty` == "Ineligible" ~ "Ineligible",
     TRUE ~ NA
   )) %>%
-  select(c(GEOID,
+  select(c(geoid,
            Designation)) %>%
   na.omit() %>%
     # transform
-  mutate(GEOID = as.numeric(trimws(GEOID)))
+  mutate(geoid = as.numeric(trimws(geoid)))
 
 
 table(oz_data$Designation)
@@ -96,7 +101,7 @@ table(oz_data$Designation)
 
 setwd(path_data_crosswalks)
 
-xwalk = read_excel("CENSUS_TRACT_CROSSWALK_2010_to_2020_2010.xlsx") %>%
+xwalk = read_excel("CENSUS_TRACT_CROSSWALK_2010_to_2020_2019.xlsx") %>%
   select(c(contains("GEOID"), TOT_RATIO)) %>%
   mutate(GEOID_2010 = as.numeric(GEOID_2010),
          GEOID_2020 = as.numeric(GEOID_2020))
@@ -106,9 +111,9 @@ xwalk = read_excel("CENSUS_TRACT_CROSSWALK_2010_to_2020_2010.xlsx") %>%
 # merge and construct dataset
 
 # define a helper function to generate descriptive mixed category names
-dynamic_designation <- function(ineligible, lic_selected, lic_not_selected, contiguous_selected, contiguous_not_selected) {
+dynamic_designation <- function(lic_selected, lic_not_selected, contiguous_selected, contiguous_not_selected) {
   categories <- c(
-    if(ineligible > 0) "Ineligible" else NULL,
+    #if(ineligible > 0) "Ineligible" else NULL,
     if(lic_selected > 0) "LIC selected" else NULL,
     if(lic_not_selected > 0) "LIC not selected" else NULL,
     if(contiguous_selected > 0) "Contiguous selected" else NULL,
@@ -131,7 +136,7 @@ dynamic_designation <- function(ineligible, lic_selected, lic_not_selected, cont
 }
 
 matched = oz_data %>%
-  left_join(xwalk, by = c("GEOID" = "GEOID_2010")) %>% na.omit() %>%
+  left_join(xwalk, by = c("geoid" = "GEOID_2010")) %>% na.omit() %>%
   
   pivot_wider(names_from = "Designation",
               values_from = "TOT_RATIO") %>%
@@ -141,7 +146,7 @@ matched = oz_data %>%
   # determine portions of the 2010 tract in the 2020 tract;
   # note that this should not add to 100%, used for an indicator.
   
-  mutate(across(c("Ineligible", "LIC not selected", "Contiguous not selected",
+  mutate(across(c("LIC not selected", "Contiguous not selected",
                   "LIC selected", "Contiguous selected"),
                 ~ sum(., na.rm = TRUE),
                 .names = paste("{col}", "(%)"))) %>%
@@ -166,28 +171,28 @@ matched = oz_data %>%
       ~ "Ineligible",
       
       # The tract is fully LIC and Selected -
-      `Ineligible (%)` == 0 &
+      #`Ineligible (%)` == 0 &
         `LIC not selected (%)` == 0 &
         `Contiguous not selected (%)` == 0 &
         `Contiguous selected (%)` == 0 
       ~ "LIC selected",
       
       # The tract is fully LIC and not selected - 
-      `Ineligible (%)` == 0 &
+      #`Ineligible (%)` == 0 &
         `LIC selected (%)` == 0 &
         `Contiguous not selected (%)` == 0 &
         `Contiguous selected (%)` == 0 
       ~ "LIC not selected",
       
       # The tract is fully Contiguous and selected - 
-      `Ineligible (%)` == 0 &
+      #`Ineligible (%)` == 0 &
         `LIC selected (%)` == 0 &
         `LIC not selected (%)` == 0 &
         `Contiguous not selected (%)` == 0
       ~ "Contiguous selected",
       
       # The tract is fully Contiguous and not selected - 
-      `Ineligible (%)` == 0 &
+      #`Ineligible (%)` == 0 &
         `LIC selected (%)` == 0 &
         `LIC not selected (%)` == 0 &
         `Contiguous selected (%)` == 0
@@ -195,7 +200,7 @@ matched = oz_data %>%
       
       ############## Mixed Treatment Type
       TRUE ~ dynamic_designation(
-        `Ineligible (%)`, 
+        #`Ineligible (%)`, 
         `LIC selected (%)`, 
         `LIC not selected (%)`, 
         `Contiguous selected (%)`, 
