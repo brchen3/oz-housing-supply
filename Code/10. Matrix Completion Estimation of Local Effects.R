@@ -35,10 +35,8 @@ library(progress)
 #################
 # Define user-specific project directories
 project_directories <- list(
-  "name" = "PATH TO GITHUB REPO",
-  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
-  "bngla" = "C:/Users/bngla/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
-  "name" = "PATH TO GITHUB REPO"
+  "BChen" = "C:/Users/bchen/Documents/GitHub/oz-housing-supply"
+  
 )
 
 # Setting project path based on current user
@@ -71,16 +69,16 @@ USPS_data <- USPS_data %>%
   mutate(
     id = as.numeric(geoid), 
     time = dense_rank(date),
-    Designation = if_else(`OZ Designation` == 1 & date >= "2020-03-01", 1, 0),
-    Total_active = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES, 
+    Designation = if_else(`OZ Designation` == 1 & date >= "2020-12-01", 1, 0),
+    Total_active = `Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential`, 
     log_Total_active = log(Total_active),
-    `current median income decile` = ntile(median_income, 10),
+    `current median income decile` = ntile(median_incomeE, 10),
     `current poverty rate decile` = ntile(poverty_rate, 10),
-    `current solo detached decile` = ntile(solo_detached_housing_share, 10)
+    `current solo detached decile` = ntile(solo_detached_housing_rate, 10)
   ) %>%
   select(id, time, date, state_fips,
          `Type tract`, Designation, `Designation_category`,
-         poverty_rate, median_income, unemployment_rate, prime_age_share, solo_detached_housing_share,
+         poverty_rate, median_incomeE, unemployment_rate, prime_age_share, solo_detached_housing_rate,
          `current median income decile`, `current poverty rate decile`, `current solo detached decile`,
          Total_active, log_Total_active) %>%
   mutate(type_tract = as.numeric(as.factor("Type tract")))
@@ -193,20 +191,20 @@ for (i in seq_len(n_treated)) {
   
   # Get the decile value for the current treated unit
   housing_date_decile <- USPS_data %>%
-    filter(id == current_treated_id & date == "2016-09-01") %>%
+    filter(id == current_treated_id & date == "2016-12-01") %>%
     pull(`current solo detached decile`)
   
   poverty__date_decile <- USPS_data %>%
-    filter(id == current_treated_id & date == "2016-09-01") %>%
+    filter(id == current_treated_id & date == "2016-12-01") %>%
     pull(`current poverty rate decile`)
   
   income__date_decile <- USPS_data %>%
-    filter(id == current_treated_id & date == "2016-09-01") %>%
+    filter(id == current_treated_id & date == "2016-12-01") %>%
     pull(`current median income decile`)
   
   # Get full set of control unit IDs (all "LIC not selected")
   control_ids <- USPS_data %>%
-    filter(date == "2016-09-01") %>%
+    filter(date == "2016-12-01") %>%
     filter(Designation_category == "LIC not selected") %>%
     # filter(`current solo detached decile` == treated__date_decile) %>%
     filter(abs(`current solo detached decile` - housing_date_decile) <= 1) %>%

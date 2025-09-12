@@ -101,8 +101,8 @@ table(oz_data$Designation)
 
 setwd(path_data_crosswalks)
 
-xwalk = read_excel("CENSUS_TRACT_CROSSWALK_2010_to_2020_2019.xlsx") %>%
-  select(c(contains("GEOID"), TOT_RATIO)) %>%
+xwalk = read_excel("tract_crosswalk_2010_2020.xlsx") %>%
+  select(c(contains("GEOID"), wt_pop)) %>%
   mutate(GEOID_2010 = as.numeric(GEOID_2010),
          GEOID_2020 = as.numeric(GEOID_2020))
   
@@ -139,7 +139,7 @@ matched = oz_data %>%
   left_join(xwalk, by = c("geoid" = "GEOID_2010")) %>% na.omit() %>%
   
   pivot_wider(names_from = "Designation",
-              values_from = "TOT_RATIO") %>%
+              values_from = "wt_pop") %>%
   
   ungroup() %>% group_by(GEOID_2020) %>%
   

@@ -75,7 +75,7 @@ target_months <- c("2014-12","2019-12", "2024-12")
 calculate_res_change <- function(data) {
   data %>%
     # Sum up all types of residential addresses into one column
-    mutate(Residential = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES) %>%
+    mutate(Residential = `Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential` + `Total Count of No-Stat Addresses - Residential`) %>%
     # Keep only rows for the target months
     filter(YEAR_MONTH %in% target_months) %>%
     # Group by month and calculate total residential addresses
@@ -126,7 +126,7 @@ print(summary_statement)
 # Aggregate annual address count changes
 Count_add  <- USPS_data %>%
   filter(YEAR_MONTH %in% c("2014-12","2015-12","2016-12","2017-12","2018-12","2019-12","2020-12","2021-12","2022-12","2023-12","2024-12"))  %>% 
-  mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
+  mutate(`Active and Vacant, Residential` = `Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential` + `Total Count of No-Stat Addresses - Residential`,
          `OZ designation` = case_when(
            Designation_category %in% c("LIC selected","Contiguous selected") ~ "OZ tracts",
            Designation_category %in% c("LIC not selected","Contiguous not selected","Ineligible") ~ "non-OZ tracts",
@@ -143,7 +143,7 @@ Count_add  <- USPS_data %>%
 # Calculate annual growth in address counts
 growth  <- USPS_data %>%
   filter(YEAR_MONTH %in% c("2014-12","2015-12","2016-12","2017-12","2018-12","2019-12","2020-12","2021-12","2022-12","2023-12","2024-12"))  %>% 
-  mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
+  mutate(`Active and Vacant, Residential` = `Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential` + `Total Count of No-Stat Addresses - Residential`,
          `OZ designation` = case_when(
            Designation_category %in% c("LIC selected","Contiguous selected") ~ "OZ tracts",
            Designation_category %in% c("LIC not selected","Contiguous not selected","Ineligible") ~ "non-OZ tracts",
@@ -176,7 +176,7 @@ write.xlsx(growth, file = "Total Address Growth Rate.xlsx")
 # Simplified version
 Count_add_simple  <- USPS_data %>%
   filter(YEAR_MONTH %in% c("2014-12","2015-12","2016-12","2017-12","2018-12","2019-12","2020-12","2021-12","2022-12","2023-12","2024-12"))  %>% 
-  mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
+  mutate(`Active and Vacant, Residential` = `Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential` + `Total Count of No-Stat Addresses - Residential`,
          `OZ designation` = case_when(
            Designation_category %in% c("LIC selected","Contiguous selected") ~ "OZ tracts",
            Designation_category %in% c("LIC not selected","Contiguous not selected","Ineligible") ~ "non-OZ tracts",
@@ -192,7 +192,7 @@ Count_add_simple  <- USPS_data %>%
 
 growth_simple  <- USPS_data %>%
   filter(YEAR_MONTH %in% c("2014-12","2015-12","2016-12","2017-12","2018-12","2019-12","2020-12","2021-12","2022-12","2023-12","2024-12"))  %>% 
-  mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
+  mutate(`Active and Vacant, Residential` = `Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential` + `Total Count of No-Stat Addresses - Residential`,
          `OZ designation` = case_when(
            Designation_category %in% c("LIC selected","Contiguous selected") ~ "OZ tracts",
            Designation_category %in% c("LIC not selected","Contiguous not selected","Ineligible") ~ "non-OZ tracts",
@@ -225,7 +225,7 @@ write.xlsx(growth, file = "Total Address Growth Rate, simplified.xlsx")
 
 growth_rate_simple  <- USPS_data %>%
   filter(YEAR_MONTH %in% c("2014-12","2015-12","2016-12","2017-12","2018-12","2019-12","2020-12","2021-12","2022-12","2023-12","2024-12"))  %>% 
-  mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
+  mutate(`Active and Vacant, Residential` = `Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential` + `Total Count of No-Stat Addresses - Residential`,
          `OZ designation` = case_when(
            Designation_category %in% c("LIC selected","Contiguous selected") ~ "OZ tracts",
            Designation_category %in% c("LIC not selected","Contiguous not selected","Ineligible") ~ "non-OZ tracts",

@@ -18,7 +18,7 @@ library(ggplot2)
 #################
 # Define user-specific project directories
 project_directories <- list(
-  "name" = "PATH TO GITHUB REPO"
+  "BChen" = "C:/Users/bchen/Documents/GitHub/oz-housing-supply"
 )
 
 # Setting project path based on current user
@@ -72,9 +72,9 @@ USPS_data <- USPS_data %>%
 ##########################################
 annual <- USPS_data %>%
   group_by(date) %>%
-  summarise(`Total residential address count` = sum(TOTAL_RESIDENTIAL_ADDRESSES, na.rm = TRUE),
-            `Active and Vacant residential address count` = sum(TOTAL_RESIDENTIAL_ADDRESSES, na.rm = TRUE) - sum(NO_STAT_RESIDENTIAL_ADDRESSES, na.rm = TRUE),
-            `Active residential address count` = sum(ACTIVE_RESIDENTIAL_ADDRESSES, na.rm = TRUE))
+  summarise(`Total residential address count` = sum(`Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential` + `Total Count of No-Stat Addresses - Residential`, na.rm = TRUE),
+            `Active and Vacant residential address count` = sum(`Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential`, na.rm = TRUE),
+            `Active residential address count` = sum(`Total Count of Addresses - Residential`, na.rm = TRUE))
 write.csv(annual,file = file.path(path_output,"time series.csv"), row.names = FALSE)
 
 ######################################
@@ -84,9 +84,9 @@ write.csv(annual,file = file.path(path_output,"time series.csv"), row.names = FA
 annual <- USPS_data %>%
   filter(`Designation_category` %in% c("LIC not selected","LIC selected")) %>%
   group_by(date) %>%
-  summarise(`Total residential address count` = sum(TOTAL_RESIDENTIAL_ADDRESSES, na.rm = TRUE),
-            `Active and Vacant residential address count` = sum(TOTAL_RESIDENTIAL_ADDRESSES, na.rm = TRUE) - sum(NO_STAT_RESIDENTIAL_ADDRESSES, na.rm = TRUE),
-            `Active residential address count` = sum(ACTIVE_RESIDENTIAL_ADDRESSES, na.rm = TRUE))
+  summarise(`Total residential address count` = sum(`Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential` + `Total Count of No-Stat Addresses - Residential`, na.rm = TRUE),
+            `Active and Vacant residential address count` = sum(`Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential`, na.rm = TRUE),
+            `Active residential address count` = sum(`Total Count of Addresses - Residential`, na.rm = TRUE))
 
 write.csv(annual,file = file.path(path_output,"time series LIC.csv"), row.names = FALSE)
 
@@ -96,10 +96,10 @@ write.csv(annual,file = file.path(path_output,"time series LIC.csv"), row.names 
 
 # Generate share of USPS addresses by OZ designation and eligibility
 share_designation <- USPS_data %>%
-  mutate(`Active and Vacant, Residential` = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES) %>%
+  mutate(`Active and Vacant, Residential` = `Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential` + `Total Count of No-Stat Addresses - Residential`) %>%
   group_by(`Designation_category`,date) %>%
   summarise(`Active and Vacant, Residential` = sum(`Active and Vacant, Residential`, na.rm = TRUE), 
-            ACTIVE_RESIDENTIAL_ADDRESSES = sum(ACTIVE_RESIDENTIAL_ADDRESSES, na.rm = TRUE), .groups = 'drop') %>%
+            ACTIVE_RESIDENTIAL_ADDRESSES = sum(`Total Count of Addresses - Residential`, na.rm = TRUE), .groups = 'drop') %>%
   group_by(date) %>%
   mutate(share = `Active and Vacant, Residential` / sum(`Active and Vacant, Residential`, na.rm = TRUE)) %>%
   arrange(date, desc(share)) %>%

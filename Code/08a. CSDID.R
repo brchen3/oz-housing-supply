@@ -27,10 +27,11 @@ library(openxlsx)
 #################
 # Define user-specific project directories
 project_directories <- list(
-  "name" = "PATH TO GITHUB REPO",
-  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
-  "bngla" = "C:/Users/bngla/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
-  "name" = "PATH TO GITHUB REPO"
+  # "name" = "PATH TO GITHUB REPO",
+  # "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
+  # "bngla" = "C:/Users/bngla/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
+  # "name" = "PATH TO GITHUB REPO"
+  "BChen" = "C:/Users/bchen/Documents/GitHub/oz-housing-supply"
 )
 
 # Setting project path based on current user
@@ -51,13 +52,14 @@ path_output <- file.path(path_project, "Output")
 ### Data load ###
 #################
 setwd(path_data)
-load(file = "USPS_tract_vacancy_2012_2024_2020_definitions.RData")
-
+#load(file = "USPS_tract_vacancy_2012_2024_2020_definitions.RData")
+load("C:/Users/bchen/Documents/GitHub/oz-housing-supply/Data/USPS_tract_vacancy_2012_2024_2020_definitions.RData")
 ################
 ### Clean up uncertain tracts from the crosswalk
 ### If a tract in 2020 is a mix of any version of the LIC, contiguous or inelligible, then drop it from the analysis - conservative first pass
 
 USPS_data <- USPS_data %>%
+  sf::st_drop_geometry() %>% 
   filter(Sample == "In Clean Sample") %>%
   filter(YEAR >=2015) 
 #  https://www.huduser.gov/apps/public/usps/download_pdf/2018-USPS-FAQ.pdf 
@@ -82,10 +84,10 @@ period_value <- min(USPS_data$period[USPS_data$date == "2018-03-01"])
 ##### Time Invariant Values
 time_invariant <- USPS_data %>% 
   filter(date == "2017-12-01") %>%
-  select(geoid,Designation_category,`poverty_rate`:`employed_tract_residents`) %>%
-  mutate(`current median income decile` = ntile(median_income, 10),
+  select(geoid, Designation_category,poverty_rate, median_incomeE, solo_detached_housing_rate) %>%
+  mutate(`current median income decile` = ntile(median_incomeE, 10),
          `current poverty rate decile` = ntile(poverty_rate, 10),
-         `current solo detached decile` = ntile(solo_detached_housing_share, 10)) %>%
+         `current solo detached decile` = ntile(solo_detached_housing_rate, 10)) %>%
   na.omit()
 
 # table(time_invariant$Designation_category, time_invariant$`current median income decile`)
@@ -93,8 +95,8 @@ time_invariant <- USPS_data %>%
 
 # Continue with other data transformations as needed
 USPS_data <- USPS_data %>%
-  select(-c(`poverty_rate`:`employed_tract_residents`)) %>%
-  filter(!is.na(ACTIVE_RESIDENTIAL_ADDRESSES)) %>%
+  #select(-c(`poverty_rate`:`employed_tract_residents`)) %>%
+  filter(!is.na(`Total Count of Addresses - Residential`)) %>%
   # filter(!is.na(ACTIVE_BUSINESS_ADDRESSES)) %>%
   # filter(!is.na(ACTIVE_OTHER_ADDRESSES)) %>%
   mutate(
@@ -107,19 +109,21 @@ USPS_data <- USPS_data %>%
     #   ACTIVE_OTHER_ADDRESSES + STV_OTHER_ADDRESSES + LTV_OTHER_ADDRESSES, 
     
     Total_active_vacant_exclude_nostat_RESIDENTIAL = 
-      ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
+      `Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential`,
     
     # VACANCY_RATE_ALL = 100*((STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES + STV_BUSINESS_ADDRESSES + LTV_BUSINESS_ADDRESSES +STV_OTHER_ADDRESSES + LTV_OTHER_ADDRESSES)/(Total_active_vacant_exclude_nostat)),
     # VACANCY_RATE_RESIDENTIAL = 100*((STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES)/(Total_active_vacant_exclude_nostat_RESIDENTIAL)),
     # VACANCY_RATE_BUSINESS = 100*((STV_BUSINESS_ADDRESSES + LTV_BUSINESS_ADDRESSES)/(Total_active_vacant_exclude_nostat_BUSINESS)),
     # VACANCY_RATE_OTHER = 100*((STV_OTHER_ADDRESSES + LTV_OTHER_ADDRESSES)/(Total_active_vacant_exclude_nostat_OTHER))
   ) %>%
-  left_join(time_invariant) %>%
+  left_join(time_invariant, by = ) %>%
   mutate(
     log_res_address = log(Total_active_vacant_exclude_nostat_RESIDENTIAL),
+    log_res_active_address = log(`Total Count of Addresses - Residential`)
   ) %>%
   mutate(
     log_res_address = if_else(log_res_address<0,NA,log_res_address),
+    log_res_active_address = if_else(log_res_active_address<0,NA,log_res_active_address)
   )
 
 # USPS_data <- USPS_data %>% 
@@ -154,7 +158,9 @@ max_quarters <- max(USPS_data$number_of_quarters)
 
 # Filter out tracts with missing quarters
 USPS_data <- USPS_data %>%
-  filter(number_of_quarters == max_quarters) 
+  filter(number_of_quarters == max_quarters) %>% 
+  rename(active_residential = `Total Count of Addresses - Residential`) %>% 
+  select(-median_ageE, -solo_detached_housing_share, -median_income, -unemployment_rate, -prime_age_share)
 
 #######################
 ### Build DID Model ###
@@ -174,7 +180,7 @@ plot_list <- list()
 outcome_vars[[1]] <- c(
   "Total_active_vacant_exclude_nostat_RESIDENTIAL"
   , "log_res_address"
-  , "ACTIVE_RESIDENTIAL_ADDRESSES"
+  , "active_residential"
   , "log_res_active_address"
   , "growth_rate"
 )
@@ -196,7 +202,7 @@ table_titles <- c(
 )
 
 # controls      <- c("poverty_rate", "median_income")
-controls      <- c("poverty_rate","median_income","solo_detached_housing_share")
+controls      <- c("poverty_rate","median_incomeE","solo_detached_housing_rate")
 control_vars  <- paste(controls, collapse = " + ")
 current_formula <- as.formula(paste("~", control_vars))
 
@@ -209,6 +215,7 @@ geo_groupings <- c("All",Metro_groupings)
 
 # Split data by census tract
 data_list[[1]] <- USPS_data
+
 for(i in seq_along(Metro_groupings)){
   j <- i + 1
   data_list[[j]] <- USPS_data %>% filter(`Type tract` == Metro_groupings[[i]])
@@ -253,7 +260,7 @@ for (j in seq_along(geo_groupings)){
       biters = 1000,
       pl = TRUE,
       data = analysis_data,
-      base_period = "universal"
+      base_period = "universal",
     )
     ggdid(csdid_treated[[i]])
     # compute the overall effect by averaging the effect of the treatment across
@@ -376,7 +383,6 @@ for (k in seq_len(nrow(results_export_list))) {
   # Find the indices for geo_grouping and outcome_var
   geo_index <- which(geo_groupings == current_geo)
   outcome_index <- which(outcome_vars[[1]] == current_outcome)
-  
   # Number of periods estimated 
   time_period_count <- length(dynamic_results_list[[geo_index]][[outcome_index]]$att.egt)
   # Extract ATT, SE, and critical value
@@ -435,19 +441,19 @@ final_table <- coef_table %>%
     `Mid-sized urban` = paste0(`Coef_Mid-sized urban`," (",`SE_Mid-sized urban`,")"),
     `Small urban` = paste0(`Coef_Small urban`," (",`SE_Small urban`,")"),
     `Suburban` = paste0(`Coef_Suburban`," (",`SE_Suburban`,")"),
-    `Small town` = paste0(`Coef_Small town`," (",`SE_Small town`,")"),
+    #`Small town` = paste0(`Coef_Small town`," (",`SE_Small town`,")"),
     `Rural` = paste0(`Coef_Rural`," (",`SE_Rural`,")"),
   ) %>%
   left_join(titles_df) %>%
   select(
     titles,
-    `All`,`Large urban`,`Mid-sized urban`,`Small urban`,`Suburban`,`Small town`,`Rural`
+    `All`,`Large urban`,`Mid-sized urban`,`Small urban`,`Suburban`,`Rural`
   )
 
 # Pivot table to horizontal for datawrapper display
 reshaped_table <- final_table %>%
   pivot_longer(
-    cols = c(`All`, `Large urban`, `Mid-sized urban`, `Small urban`, `Suburban`, `Small town`, `Rural`),
+    cols = c(`All`, `Large urban`, `Mid-sized urban`, `Small urban`, `Suburban`, `Rural`),
     names_to = "geo_grouping",
     values_to = "Coef_SE"
   ) %>%
@@ -455,7 +461,7 @@ reshaped_table <- final_table %>%
     names_from = titles,
     values_from = Coef_SE
   ) %>%
-  arrange(match(geo_grouping, c("All", "Large urban", "Mid-sized urban", "Small urban", "Suburban", "Small town", "Rural"))) %>%
+  arrange(match(geo_grouping, c("All", "Large urban", "Mid-sized urban", "Small urban", "Suburban", "Rural"))) %>%
   select(geo_grouping,all_of(table_titles)) %>%
   rename(`Tract Geography` = geo_grouping)
 
@@ -488,9 +494,9 @@ export_plot_list[[8]] <- plot_data_list[[2]][[4]] # Large Urban tracts, log(Acti
 
 export_plot_list[[9]] <- plot_data_list[[3]][[1]] # Mid-size Urban tracts, log(Active and Vacant Residential) 
 export_plot_list[[10]] <- plot_data_list[[4]][[1]] # rural tracts, log(Active and Vacant Residential) 
-export_plot_list[[11]] <- plot_data_list[[5]][[1]] # small town tracts, log(Active and Vacant Residential) 
-export_plot_list[[12]] <- plot_data_list[[6]][[1]] # small Urban tracts, log(Active and Vacant Residential) 
-export_plot_list[[13]] <- plot_data_list[[7]][[1]] # suburban tracts, log(Active and Vacant Residential) 
+#export_plot_list[[11]] <- plot_data_list[[5]][[1]] # small town tracts, log(Active and Vacant Residential) 
+export_plot_list[[11]] <- plot_data_list[[5]][[1]] # small Urban tracts, log(Active and Vacant Residential) 
+export_plot_list[[12]] <- plot_data_list[[6]][[1]] # suburban tracts, log(Active and Vacant Residential) 
 
 
 
@@ -507,7 +513,7 @@ sheet_names <- c(
   
   , "Mid-size, Act and Vac Res"
   , "rural, Act and Vac Res"
-  , "Small town, Act and Vac Res"
+ # , "Small town, Act and Vac Res"
   , "Small Urban, Act and Vac Res"
   , "Suburban, Act and Vac Res"
 )

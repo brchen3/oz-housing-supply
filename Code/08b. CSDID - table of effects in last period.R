@@ -27,10 +27,11 @@ library(openxlsx)
 #################
 # Define user-specific project directories
 project_directories <- list(
-  "name" = "PATH TO GITHUB REPO",
-  "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
-  "bngla" = "C:/Users/bngla/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
-  "name" = "PATH TO GITHUB REPO"
+  # "name" = "PATH TO GITHUB REPO",
+  # "Benjamin Glasner" = "C:/Users/Benjamin Glasner/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
+  # "bngla" = "C:/Users/bngla/EIG Dropbox/Benjamin Glasner/GitHub/oz-housing-supply",
+  # "name" = "PATH TO GITHUB REPO"
+  "BChen" = "C:/Users/bchen/Documents/GitHub/oz-housing-supply"
 )
 
 # Setting project path based on current user
@@ -77,16 +78,16 @@ USPS_data <- USPS_data %>%
 USPS_data <- USPS_data %>% 
   mutate( period = dense_rank(date))
 
-period_value <- min(USPS_data$period[USPS_data$date == "2018-03-01"])
+period_value <- min(USPS_data$period[USPS_data$date == "2018-12-01"])
 # period_value <- min(USPS_data$period[USPS_data$date == "2020-03-01"])
 
 ##### Time Invariant Values
 time_invariant <- USPS_data %>% 
   filter(date == "2017-12-01") %>%
-  select(geoid,Designation_category,`poverty_rate`:`employed_tract_residents`) %>%
-  mutate(`current median income decile` = ntile(median_income, 10),
+  select(geoid,Designation_category,poverty_rate, median_incomeE, solo_detached_housing_rate) %>%
+  mutate(`current median income decile` = ntile(median_incomeE, 10),
          `current poverty rate decile` = ntile(poverty_rate, 10),
-         `current solo detached decile` = ntile(solo_detached_housing_share, 10)) %>%
+         `current solo detached decile` = ntile(solo_detached_housing_rate, 10)) %>%
   na.omit()
 
 # table(time_invariant$Designation_category, time_invariant$`current median income decile`)
@@ -94,8 +95,8 @@ time_invariant <- USPS_data %>%
 
 # Continue with other data transformations as needed
 USPS_data <- USPS_data %>%
-  select(-c(`poverty_rate`:`employed_tract_residents`)) %>%
-  filter(!is.na(ACTIVE_RESIDENTIAL_ADDRESSES)) %>%
+  #select(-c(`poverty_rate`:`employed_tract_residents`)) %>%
+  filter(!is.na(`Total Count of Addresses - Residential`)) %>%
   # filter(!is.na(ACTIVE_BUSINESS_ADDRESSES)) %>%
   # filter(!is.na(ACTIVE_OTHER_ADDRESSES)) %>%
   mutate(
@@ -108,7 +109,7 @@ USPS_data <- USPS_data %>%
     #   ACTIVE_OTHER_ADDRESSES + STV_OTHER_ADDRESSES + LTV_OTHER_ADDRESSES, 
     
     Total_active_vacant_exclude_nostat_RESIDENTIAL = 
-      ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES,
+      `Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential`,
     
     # VACANCY_RATE_ALL = 100*((STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES + STV_BUSINESS_ADDRESSES + LTV_BUSINESS_ADDRESSES +STV_OTHER_ADDRESSES + LTV_OTHER_ADDRESSES)/(Total_active_vacant_exclude_nostat)),
     # VACANCY_RATE_RESIDENTIAL = 100*((STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES)/(Total_active_vacant_exclude_nostat_RESIDENTIAL)),
@@ -155,7 +156,10 @@ max_quarters <- max(USPS_data$number_of_quarters)
 
 # Filter out tracts with missing quarters
 USPS_data <- USPS_data %>%
-  filter(number_of_quarters == max_quarters) 
+  filter(number_of_quarters == max_quarters) %>% 
+  rename(active_residential = `Total Count of Addresses - Residential`) %>% 
+  select(-median_ageE, -solo_detached_housing_share, -median_income, -unemployment_rate, -prime_age_share)
+
 
 #######################
 ### Build DID Model ###
@@ -188,7 +192,7 @@ table_titles <- c(
 )
 
 # controls      <- c("poverty_rate", "median_income")
-controls      <- c("poverty_rate","median_income","solo_detached_housing_share")
+controls      <- c("poverty_rate","median_incomeE","solo_detached_housing_rate")
 control_vars  <- paste(controls, collapse = " + ")
 current_formula <- as.formula(paste("~", control_vars))
 
@@ -400,19 +404,19 @@ final_table <- coef_table %>%
     `Mid-sized urban` = paste0(`Coef_Mid-sized urban`," (",`SE_Mid-sized urban`,")"),
     `Small urban` = paste0(`Coef_Small urban`," (",`SE_Small urban`,")"),
     `Suburban` = paste0(`Coef_Suburban`," (",`SE_Suburban`,")"),
-    `Small town` = paste0(`Coef_Small town`," (",`SE_Small town`,")"),
+    #`Small town` = paste0(`Coef_Small town`," (",`SE_Small town`,")"),
     `Rural` = paste0(`Coef_Rural`," (",`SE_Rural`,")"),
          ) %>%
   left_join(titles_df) %>%
   select(
     titles,
-    `All`,`Large urban`,`Mid-sized urban`,`Small urban`,`Suburban`,`Small town`,`Rural`
+    `All`,`Large urban`,`Mid-sized urban`,`Small urban`,`Suburban`,`Rural`
   )
 
 # Pivot table to horizontal for datawrapper display
 reshaped_table <- final_table %>%
   pivot_longer(
-    cols = c(`All`, `Large urban`, `Mid-sized urban`, `Small urban`, `Suburban`, `Small town`, `Rural`),
+    cols = c(`All`, `Large urban`, `Mid-sized urban`, `Small urban`, `Suburban`, `Rural`),
     names_to = "geo_grouping",
     values_to = "Coef_SE"
   ) %>%
@@ -420,9 +424,10 @@ reshaped_table <- final_table %>%
     names_from = titles,
     values_from = Coef_SE
   ) %>%
-  arrange(match(geo_grouping, c("All", "Large urban", "Mid-sized urban", "Small urban", "Suburban", "Small town", "Rural"))) %>%
+  arrange(match(geo_grouping, c("All", "Large urban", "Mid-sized urban", "Small urban", "Suburban", "Rural"))) %>%
   select(geo_grouping,all_of(table_titles)) %>%
   rename(`Tract Geography` = geo_grouping)
 
 setwd(path_output)
 write.xlsx(reshaped_table, file = "CSDID Effect Estimate.xlsx", overwrite = TRUE)
+

@@ -17,7 +17,7 @@ library(openxlsx)
 #################
 # Define user-specific project directories
 project_directories <- list(
-  "name" = "PATH TO GITHUB REPO"
+  "BChen" = "C:/Users/bchen/Documents/GitHub/oz-housing-supply"
 )
 
 # Setting project path based on current user
@@ -40,7 +40,7 @@ path_output <- file.path(path_project, "Output")
 did_results <- read.xlsx(file.path(path_output, "CSDID Effect Estimate.xlsx"))
 
 # Additional calculations based on the provided text
-avg_effect <- 35.66
+avg_effect <- 45.35
 oz_tracts <- 8764           # total number of OZ tracts
   
 oz_new_estimated <- avg_effect * oz_tracts  # estimated new addresses due to OZs
@@ -60,13 +60,13 @@ USPS_data <- USPS_data %>%
   filter(Sample == "In Clean Sample") 
 
 # Define the time period of interest
-target_months <- c("2014-09","2019-09", "2024-09")
+target_months <- c("2014-12","2019-12", "2024-12")
 
 # Helper function to calculate residential address change for a given filter
 calculate_res_change <- function(data) {
   data %>%
     # Sum up all types of residential addresses into one column
-    mutate(Residential = ACTIVE_RESIDENTIAL_ADDRESSES + STV_RESIDENTIAL_ADDRESSES + LTV_RESIDENTIAL_ADDRESSES) %>%
+    mutate(Residential = `Total Count of Addresses - Residential` + `Total Count of Vacant Addresses - Residential`) %>%
     # Keep only rows for the target months
     filter(YEAR_MONTH %in% target_months) %>%
     # Group by month and calculate total residential addresses
@@ -75,8 +75,8 @@ calculate_res_change <- function(data) {
     # Spread months into separate columns for easier comparison
     pivot_wider(names_from = YEAR_MONTH, values_from = TotalResidential) %>%
     # Calculate the change from 2019-09 to 2024-09
-    mutate(change = `2024-09` - `2019-09`,
-           pre_change = `2019-09` - `2014-09`)
+    mutate(change = `2024-12` - `2019-12`,
+           pre_change = `2019-12` - `2014-12`)
 }
 
 # Calculate national residential change without any category filter

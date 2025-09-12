@@ -62,7 +62,7 @@ path_output <- file.path(path_project, "Output")
 #################
 # tract - crosswalk
 
-CENSUS_TRACT_CROSSWALK <- read_excel(file.path(path_data_crosswalks, "CENSUS_TRACT_CROSSWALK_2010_to_2020_2019.xlsx"))
+CENSUS_TRACT_CROSSWALK <- read_excel(file.path(path_data_crosswalks, "tract_crosswalk_2010_2020.xlsx"))
 
 # time invariant characteristics
 # NCWM_Economic_Development2 <- read_excel(file.path(path_data, "NCWM_Economic_Development2.xlsx")) %>%
@@ -73,9 +73,11 @@ tract_data <- map_df(states, function(state) {
   get_acs(
     geography = "tract",
     variables = c(
-      total_pop = "B01003_001",
-      housing_units = "B25001_001",
-      median_age = "B01002_001"
+      poverty_count = "B17001_002",
+      poverty_total = "B17001_001",
+      median_income = "B19013_001",
+      solo_detached_housing_count = "B25024_002",
+      solo_detached_housing_total = "B25024_001"
     ),
     year = 2010,
     survey = "acs5",
@@ -88,12 +90,14 @@ tract_data <- map_df(states, function(state) {
 
 
 tract_data_clean <- tract_data %>%
-  select(GEOID, NAME, total_popE, median_ageE, geometry) %>% 
+  select(GEOID, NAME, poverty_countE, poverty_totalE, median_incomeE, solo_detached_housing_countE, solo_detached_housing_totalE) %>% 
   left_join(tract_designation, by = c("GEOID" = "geoid")) %>% 
   mutate(Designation_category = case_when(
     is.na(Designation_category) ~ "Ineligible",
     TRUE ~ Designation_category
-  ))
+  ),
+  poverty_rate = poverty_countE/poverty_totalE,
+  solo_detached_housing_rate = solo_detached_housing_countE/solo_detached_housing_totalE)
 
 
 #####################
@@ -193,7 +197,6 @@ LODES  <- readr::read_csv("tract_workers_and_residents.csv") %>%
 
 time_inv <- tract_data_clean %>%
   mutate(
-    
   Sample = case_when(
     Designation_category %in% c("Ineligible",
                                 "LIC selected",
@@ -212,14 +215,16 @@ time_inv <- tract_data_clean %>%
   
   ) %>%
   left_join(NCES_Locales_Tract_2020, by = c("GEOID" = "geoid")) %>%
-  select(GEOID,
-         #QCT,
-         #NMTC,
-         `OZ Designation`,
-         #OZ_2020,
-         `Designation_category`,Sample,
-         `Type tract`) %>%
-  left_join(OZ_Adjc_Trcts, by = c("GEOID" = "GEOID")) %>%
+  # select(GEOID,
+  #        
+  #        #QCT,
+  #        #NMTC,
+  #        `OZ Designation`,
+  #        #OZ_2020,
+  #        `Designation_category`,
+  #        Sample,
+  #        `Type tract`) %>%
+  left_join(OZ_Adjc_Trcts) %>%
   mutate(next_to_oz = case_when(
     is.na(neighbor_oz) ~ 0,
     !is.na(neighbor_oz) ~ 1,
@@ -235,30 +240,30 @@ save(time_inv, file = "Tract_2020_time_invariant_characteristics.RData")
 
 
 
-# Step 1: Summarize and pivot the data
-pivot_tbl <- time_inv %>%
-  filter(Sample == "In Clean Sample") %>%
-  group_by(Designation_category, GEOID) %>%
-  summarise(count = n(), .groups = "drop") #%>%
-  pivot_wider(
-    names_from = GEOID,
-    values_from = count,
-    values_fill = list(count = 0)
-  )
-
-# Step 2: Add a totals column by summing across each row
-pivot_tbl <- pivot_tbl %>%
-  mutate(Total = rowSums(across(where(is.numeric))))
-
-# Step 3: Create a summary row that sums each numeric column
-total_row <- pivot_tbl %>%
-  summarise(across(where(is.numeric), sum)) %>%
-  mutate(Designation_category = "Total")
-
-# Step 4: Append the summary row to the pivot table
-final_table <- bind_rows(pivot_tbl, total_row)
-
-final_table
+# # Step 1: Summarize and pivot the data
+# pivot_tbl <- time_inv %>%
+#   filter(Sample == "In Clean Sample") %>%
+#   group_by(Designation_category, GEOID) %>%
+#   summarise(count = n(), .groups = "drop") #%>%
+#   pivot_wider(
+#     names_from = GEOID,
+#     values_from = count,
+#     values_fill = list(count = 0)
+#   )
+# 
+# # Step 2: Add a totals column by summing across each row
+# pivot_tbl <- pivot_tbl %>%
+#   mutate(Total = rowSums(across(where(is.numeric))))
+# 
+# # Step 3: Create a summary row that sums each numeric column
+# total_row <- pivot_tbl %>%
+#   summarise(across(where(is.numeric), sum)) %>%
+#   mutate(Designation_category = "Total")
+# 
+# # Step 4: Append the summary row to the pivot table
+# final_table <- bind_rows(pivot_tbl, total_row)
+# 
+# final_table
 
 # Step 1: Summarize and pivot the data
 pivot_tbl <- time_inv %>%
@@ -318,7 +323,7 @@ USPS_data <- USPS_data %>%
 
 USPS_data <- USPS_data %>% 
   left_join(time_inv %>% mutate(GEOID = as.numeric(GEOID)), by = c("geoid" = "GEOID")) %>%
-  left_join(ACS_2012_2023) %>% 
+  left_join(ACS_2012_2023, by = c("geoid", "YEAR")) %>% 
   left_join(LODES)
 
 USPS_data <- USPS_data %>%
