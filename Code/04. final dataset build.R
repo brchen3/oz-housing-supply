@@ -82,22 +82,12 @@ tract_data <- map_df(states, function(state) {
     year = 2010,
     survey = "acs5",
     state = state,
-    geometry = TRUE,
+    geometry = FALSE,
     output = "wide"
   )
 })
 
 
-
-tract_data_clean <- tract_data %>%
-  select(GEOID, NAME, poverty_countE, poverty_totalE, median_incomeE, solo_detached_housing_countE, solo_detached_housing_totalE) %>% 
-  left_join(tract_designation, by = c("GEOID" = "geoid")) %>% 
-  mutate(Designation_category = case_when(
-    is.na(Designation_category) ~ "Ineligible",
-    TRUE ~ Designation_category
-  ),
-  poverty_rate = poverty_countE/poverty_totalE,
-  solo_detached_housing_rate = solo_detached_housing_countE/solo_detached_housing_totalE)
 
 
 #####################
@@ -140,12 +130,25 @@ USPS_data <- USPS_data %>%
 setwd(path_data_tract)
 
 # see 2. OZ eligible tracts build.R
-tract_designation <- read.csv("2020_tracts_with_2010_qualifications.csv") %>%
+tract_designation<- read.csv("2020_tracts_with_2010_qualifications.csv") %>%
   mutate(geoid = as.character(GEOID_2020)) %>% 
   select(-X) %>%
   select(-GEOID_2020)
-  
+
+
+
 tract_designation_geoid <- sort(unique(tract_designation$geoid))
+
+tract_data_clean <- tract_data %>%
+  select(GEOID, NAME, poverty_countE, poverty_totalE, median_incomeE, solo_detached_housing_countE, solo_detached_housing_totalE) %>%
+  mutate(GEOID = sub("^0+", "", GEOID)) %>% 
+  left_join(tract_designation, by = c("GEOID" = "geoid")) %>% 
+  mutate(Designation_category = case_when(
+    is.na(Designation_category) ~ "Ineligible",
+    TRUE ~ Designation_category
+  ),
+  poverty_rate = poverty_countE/poverty_totalE,
+  solo_detached_housing_rate = solo_detached_housing_countE/solo_detached_housing_totalE)
 
 # read National Center for Education Statistics 2021 classifications,
 # for urban-rural tract classification schema
@@ -318,15 +321,15 @@ USPS_data <- USPS_data %>%
 
 max_quarters <- max(USPS_data$number_of_quarters)
 
-USPS_data <- USPS_data %>%
+USPS_data1 <- USPS_data %>%
   filter(number_of_quarters == max_quarters)
 
-USPS_data <- USPS_data %>% 
+USPS_data2 <- USPS_data1 %>% 
   left_join(time_inv %>% mutate(GEOID = as.numeric(GEOID)), by = c("geoid" = "GEOID")) %>%
   left_join(ACS_2012_2023, by = c("geoid", "YEAR")) %>% 
   left_join(LODES)
 
-USPS_data <- USPS_data %>%
+USPS_data3 <- USPS_data2 %>%
   mutate(Designation_category_detailed = case_when(
     Designation_category == "Contiguous not selected" & next_to_oz == 1 ~ "Contiguous not selected, border tract",
     Designation_category == "Contiguous not selected" & next_to_oz == 0 ~ "Contiguous not selected, not a border tract",
@@ -361,11 +364,11 @@ USPS_data %>%
 
 sort(unique((USPS_data$date)))
 
-USPS_data <- USPS_data %>%
+USPS_data4 <- USPS_data3 %>%
   filter(YEAR>2011)
 
 ########
 # Export
 setwd(path_data)
-save(USPS_data, file = "USPS_tract_vacancy_2012_2024_2020_definitions.RData")
+save(USPS_data4, file = "USPS_tract_vacancy_2012_2024_2020_definitions.RData")
 

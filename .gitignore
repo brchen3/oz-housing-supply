@@ -9,3 +9,4 @@
 *.Rhistory
 *.dbf
 *.zip
+.Rproj.user
